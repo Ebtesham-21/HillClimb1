@@ -552,7 +552,7 @@ Transform:
   m_GameObject: {fileID: 815232231}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.21, y: -0.24, z: -2.6488254}
+  m_LocalPosition: {x: -0.26, y: -1.21, z: -2.6488254}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -600,11 +600,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wheelFL: {fileID: 1945452005}
   wheelFR: {fileID: 2135121007}
+  carBody: {fileID: 894264830}
   wheelFLCollider: {fileID: 1945452007}
   wheelFRCollider: {fileID: 2135121009}
-  motorForce: 604
-  tiltTorque: 159.6
+  motorForce: 300.8
   wheelRotateSpeed: 20
+  tiltOnGround: 2
+  tiltInAir: 50
+  tiltSmooth: 5
+  maxTilt: 30
 --- !u!1 &894264829
 GameObject:
   m_ObjectHideFlags: 0
@@ -716,7 +720,7 @@ Transform:
   m_GameObject: {fileID: 1945452004}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.098, y: -0.825, z: 0}
+  m_LocalPosition: {x: -1.098, y: -0.871, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
