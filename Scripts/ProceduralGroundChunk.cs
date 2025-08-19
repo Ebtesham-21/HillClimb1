@@ -20,9 +20,15 @@ public class ProceduralGroundChunk : MonoBehaviour
     private Mesh mesh;
     private MeshFilter mf;
     private EdgeCollider2D edge;
+    [SerializeField] private float offsetY = -3f;
 
     public float EndXWorld => startXWorld + segments * step;
 
+
+    void Start()
+    {
+            Build();
+    }
 
     void Awake()
     {
@@ -41,6 +47,7 @@ public class ProceduralGroundChunk : MonoBehaviour
         var uvs = new Vector2[vertCount];
         var tris = new int[segments * 6];
         var edgePoints = new Vector2[topCount];
+        
 
         for (int i = 0; i <= segments; i++)
         {
@@ -84,7 +91,8 @@ public class ProceduralGroundChunk : MonoBehaviour
         edge.useAdjacentEndPoint = false;
         edge.points = edgePoints;
 
-        transform.position = new Vector3(startXWorld, 0f, transform.position.z);
+        transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
+
         transform.localScale = Vector3.one;
     }
 
