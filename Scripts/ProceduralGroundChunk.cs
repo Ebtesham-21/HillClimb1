@@ -1,71 +1,85 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 
 public class ProceduralGroundChunk : MonoBehaviour
 {
-
     [HideInInspector] public int segments = 60;
     [HideInInspector] public float step = 1f;
     [HideInInspector] public float noiseScale = 0.05f;
     [HideInInspector] public float amplitude = 6f;
     [HideInInspector] public float baseY = 0f;
-    [HideInInspector] public float bottomY = -20f;
+    [HideInInspector] public float bottomY = -3f;
     [HideInInspector] public float seed = 1234f;
     [HideInInspector] public float startXWorld = 0f;
     [HideInInspector] public float uvTilesX = 4f;
 
+    [SerializeField] private float offsetY = -1f;
 
-    private Mesh mesh;
-    private MeshFilter mf;
+    // Materials
+    public Material roadMaterial;
+    public Material stoneMaterial;
+
+    private MeshFilter roadMF, stoneMF;
+    private MeshRenderer roadMR, stoneMR;
     private EdgeCollider2D edge;
-    [SerializeField] private float offsetY = -3f;
 
     public float EndXWorld => startXWorld + segments * step;
 
+    void Awake()
+    {
+        // Create child objects
+        Transform roadGO = new GameObject("RoadMesh").transform;
+        roadGO.parent = transform;
+        roadGO.localPosition = Vector3.zero;
+
+        roadMF = roadGO.gameObject.AddComponent<MeshFilter>();
+        roadMR = roadGO.gameObject.AddComponent<MeshRenderer>();
+        roadMR.material = roadMaterial;
+
+        Transform stoneGO = new GameObject("StoneMesh").transform;
+        stoneGO.parent = transform;
+        stoneGO.localPosition = Vector3.zero;
+
+        stoneMF = stoneGO.gameObject.AddComponent<MeshFilter>();
+        stoneMR = stoneGO.gameObject.AddComponent<MeshRenderer>();
+        stoneMR.material = stoneMaterial;
+
+        // EdgeCollider for car to ride on road
+        edge = gameObject.AddComponent<EdgeCollider2D>();
+    }
 
     void Start()
     {
-            Build();
-    }
-
-    void Awake()
-    {
-        mf = GetComponent<MeshFilter>();
-        edge = GetComponent<EdgeCollider2D>();
-        mesh = new Mesh { name = "GroundChunk" };
-        mf.sharedMesh = mesh;
+        Build();
     }
 
     public void Build()
     {
         int topCount = segments + 1;
-        int vertCount = topCount * 2;
 
-        var vertices = new Vector3[vertCount];
-        var uvs = new Vector2[vertCount];
-        var tris = new int[segments * 6];
-        var edgePoints = new Vector2[topCount];
-        
+        // --- Road Mesh ---
+        Mesh roadMesh = new Mesh();
+        Vector3[] roadVertices = new Vector3[topCount * 2];
+        Vector2[] roadUVs = new Vector2[topCount * 2];
+        int[] roadTris = new int[segments * 6];
+        Vector2[] edgePoints = new Vector2[topCount];
 
         for (int i = 0; i <= segments; i++)
         {
             float xLocal = i * step;
             float xWorld = startXWorld + xLocal;
-
             float yTop = baseY + Mathf.PerlinNoise((xWorld + seed) * noiseScale, 0f) * amplitude;
 
-            vertices[i] = new Vector3(xLocal, yTop, 0f);
-
-            vertices[i + topCount] = new Vector3(xLocal, bottomY, 0f);
+            float roadHeight = 0.2f; // <--- very thin stroke
+            roadVertices[i] = new Vector3(xLocal, yTop, 0f);
+            roadVertices[i + topCount] = new Vector3(xLocal, yTop - roadHeight, 0f); // small thickness
 
             float u = (float)i / segments * uvTilesX;
-            uvs[i] = new Vector2(u, 1f);
-            uvs[i + topCount] = new Vector2(u, 0f);
+            roadUVs[i] = new Vector2(u, 1f);
+            roadUVs[i + topCount] = new Vector2(u, 0f);
 
             edgePoints[i] = new Vector2(xLocal, yTop);
-
         }
 
         int t = 0;
@@ -76,25 +90,54 @@ public class ProceduralGroundChunk : MonoBehaviour
             int c = i + 1;
             int d = i + topCount + 1;
 
-            tris[t++] = a; tris[t++] = b; tris[t++] = c;
-            tris[t++] = c; tris[t++] = b; tris[t++] = d;
+            roadTris[t++] = a; roadTris[t++] = b; roadTris[t++] = c;
+            roadTris[t++] = c; roadTris[t++] = b; roadTris[t++] = d;
         }
 
-        mesh.Clear();
-        mesh.vertices = vertices;
-        mesh.triangles = tris;
-        mesh.uv = uvs;
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
+        roadMesh.vertices = roadVertices;
+        roadMesh.triangles = roadTris;
+        roadMesh.uv = roadUVs;
+        roadMesh.RecalculateBounds();
+        roadMesh.RecalculateNormals();
 
+        roadMF.mesh = roadMesh;
+
+        // --- Stone Mesh (flat rectangle under road) ---
+        Mesh stoneMesh = new Mesh();
+        Vector3[] stoneVertices = new Vector3[4]; // rectangle
+        Vector2[] stoneUVs = new Vector2[4];
+        int[] stoneTris = new int[6];
+
+        float width = segments * step;
+        float height = baseY - bottomY;
+
+        stoneVertices[0] = new Vector3(0, bottomY, 0);
+        stoneVertices[1] = new Vector3(width, bottomY, 0);
+        stoneVertices[2] = new Vector3(0, baseY, 0);
+        stoneVertices[3] = new Vector3(width, baseY, 0);
+
+        stoneUVs[0] = new Vector2(0, 0);
+        stoneUVs[1] = new Vector2(1, 0);
+        stoneUVs[2] = new Vector2(0, 1);
+        stoneUVs[3] = new Vector2(1, 1);
+
+        stoneTris[0] = 0; stoneTris[1] = 2; stoneTris[2] = 1;
+        stoneTris[3] = 1; stoneTris[4] = 2; stoneTris[5] = 3;
+
+        stoneMesh.vertices = stoneVertices;
+        stoneMesh.triangles = stoneTris;
+        stoneMesh.uv = stoneUVs;
+        stoneMesh.RecalculateBounds();
+        stoneMesh.RecalculateNormals();
+
+        stoneMF.mesh = stoneMesh;
+
+        // --- Edge Collider ---
         edge.useAdjacentStartPoint = false;
         edge.useAdjacentEndPoint = false;
         edge.points = edgePoints;
 
         transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
-
         transform.localScale = Vector3.one;
     }
-
-    
 }
