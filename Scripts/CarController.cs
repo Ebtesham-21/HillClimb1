@@ -4,89 +4,120 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    [Header("Wheel Transforms (visuals only)")]
+    [Header("References")]
+    public Transform carBody;
     public Transform wheelFL;
     public Transform wheelFR;
-
-    [Header("Car body Tilt Only")]
-    public Transform carBody; //only body tilts at z axis 
-
-    [Header("Wheel Colliders")]
     public Collider2D wheelFLCollider;
     public Collider2D wheelFRCollider;
 
-    [Header("Car tilt Settings")]
+    [Header("Movement Settings")]
+    [Tooltip("The main force applied to move the car forward/backward.")]
     public float motorForce = 2000f;
+    [Tooltip("How fast the wheel visuals spin.")]
     public float wheelRotateSpeed = 20f;
 
-    public float tiltOnGround = 15f;
-    public float tiltInAir = 50f;
-    public float tiltSmooth = 5f;
-    public float maxTilt = 30f;
+    [Header("Ground Control")]
+    [Tooltip("How quickly the car aligns itself to the slope of the ground.")]
+    public float groundAlignmentSpeed = 5f;
+    [Tooltip("The Z-axis tilt applied to the car body when accelerating on the ground.")]
+    public float bodyTiltOnGround = 15f;
+
+    [Header("Air Control")]
+    [Tooltip("The torque force applied to rotate the car in the air.")]
+    public float airControlTorque = 50f;
+
+    [Header("General Settings")]
+    [Tooltip("How smoothly the visual body tilt is applied.")]
+    public float tiltSmoothSpeed = 5f;
+    [Tooltip("Which layers are considered 'ground' for alignment.")]
+    public LayerMask groundLayer; // <-- NEW!
 
     private Rigidbody2D rb;
-
+    private float horizontalInput;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
 
-        // Auto-find wheel colliders
-        if (wheelFLCollider == null)
-            wheelFLCollider = transform.Find("WheelFL").GetComponent<Collider2D>();
-        if (wheelFRCollider == null)
-            wheelFRCollider = transform.Find("wheelFR").GetComponent<Collider2D>();
-
-        // Auto find wheel transformers
-
-        if (wheelFL == null)
-            wheelFL = transform.Find("WheelFL");
-        if (wheelFR == null)
-            wheelFR = transform.Find("WheelFR");
-
-
-        // Auto find car body
-        if (carBody == null)
-            carBody = transform.Find("Body");
-
-
+        // This auto-finding logic is good!
+        if (wheelFLCollider == null) wheelFLCollider = transform.Find("WheelFL").GetComponent<Collider2D>();
+        if (wheelFRCollider == null) wheelFRCollider = transform.Find("WheelFR").GetComponent<Collider2D>();
+        if (wheelFL == null) wheelFL = transform.Find("WheelFL");
+        if (wheelFR == null) wheelFR = transform.Find("WheelFR");
+        if (carBody == null) carBody = transform.Find("Body");
     }
 
+    // Get input here, so it's not missed between physics frames
+    void Update()
+    {
+        horizontalInput = Input.GetAxis("Horizontal");
+    }
 
     void FixedUpdate()
     {
-        float move = Input.GetAxis("Horizontal");
+        // Apply movement force
+        rb.AddForce(transform.right * horizontalInput * motorForce * Time.fixedDeltaTime);
 
-        rb.AddForce(Vector2.right * move * motorForce * Time.fixedDeltaTime);
+        // Rotate wheel visuals
+        wheelFL.Rotate(0, 0, -rb.velocity.magnitude * Mathf.Sign(horizontalInput) * 0.5f);
+        wheelFR.Rotate(0, 0, -rb.velocity.magnitude * Mathf.Sign(horizontalInput) * 0.5f);
 
-        wheelFL.Rotate(0, 0, -move * wheelRotateSpeed);
-        wheelFR.Rotate(0, 0, -move * wheelRotateSpeed);
 
-          // 3️⃣ Tilt car body
+        // Check if the car is on the ground
         if (IsGrounded())
         {
-            float targetTilt = 0f;
-            if (move > 0) targetTilt = -tiltOnGround; // tilt left on accelerator
-            else if (move < 0) targetTilt = tiltOnGround; // tilt right on brake
-
-            carBody.localEulerAngles = new Vector3(0, 0,
-                Mathf.LerpAngle(carBody.localEulerAngles.z, targetTilt, Time.fixedDeltaTime * tiltSmooth));
+            HandleGroundControl();
         }
         else
         {
-            // In air, apply torque to body visually (optional)
-            float bodyTilt = carBody.localEulerAngles.z;
-            bodyTilt -= move * tiltInAir * Time.fixedDeltaTime;
-            bodyTilt = Mathf.Clamp(bodyTilt, -maxTilt, maxTilt);
-            carBody.localEulerAngles = new Vector3(0, 0, bodyTilt);
+            HandleAirControl();
         }
+    }
+
+    void HandleGroundControl()
+    {
+        // --- 1. Align the ENTIRE CAR to the ground slope ---
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, -transform.up, 2f, groundLayer);
+
+        if (hit.collider != null)
+        {
+            // Calculate the angle of the ground
+            float targetAngle = Vector2.SignedAngle(Vector2.up, hit.normal);
+
+            // Smoothly rotate the Rigidbody to match the ground angle
+            float newRotation = Mathf.LerpAngle(rb.rotation, targetAngle, groundAlignmentSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(newRotation);
+        }
+
+
+        // --- 2. Tilt ONLY THE BODY for acceleration/braking effect ---
+        float targetBodyTilt = 0f;
+        if (Mathf.Abs(horizontalInput) > 0.1f)
+        {
+            // Tilt based on input direction
+            targetBodyTilt = -horizontalInput * bodyTiltOnGround;
+        }
+
+        // Smoothly apply the local tilt to the car body
+        carBody.localEulerAngles = new Vector3(0, 0,
+            Mathf.LerpAngle(carBody.localEulerAngles.z, targetBodyTilt, Time.fixedDeltaTime * tiltSmoothSpeed));
+    }
+
+    void HandleAirControl()
+    {
+        // --- 1. Apply torque to rotate the ENTIRE CAR in the air ---
+        rb.AddTorque(-horizontalInput * airControlTorque * Time.fixedDeltaTime);
+
+        // --- 2. Reset the visual body tilt ---
+        // This ensures the body doesn't keep its acceleration tilt while airborne
+        carBody.localEulerAngles = new Vector3(0, 0,
+            Mathf.LerpAngle(carBody.localEulerAngles.z, 0, Time.fixedDeltaTime * tiltSmoothSpeed));
     }
 
     bool IsGrounded()
     {
-        return wheelFLCollider.IsTouchingLayers() || wheelFRCollider.IsTouchingLayers();
+        // Use the colliders to check for ground contact
+        return wheelFLCollider.IsTouchingLayers(groundLayer) || wheelFRCollider.IsTouchingLayers(groundLayer);
     }
 }
-
-
-    

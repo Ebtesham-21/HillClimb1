@@ -4,38 +4,40 @@ using UnityEngine;
 
 public class ProceduralGroundChunk : MonoBehaviour
 {
-    [HideInInspector] public int segments = 60;
-    [HideInInspector] public float step = 1f;
-    [HideInInspector] public float noiseScale = 0.05f;
-    [HideInInspector] public float amplitude = 6f;
-    [HideInInspector] public float baseY = 0f;
-    [HideInInspector] public float bottomY = -3f;
-    [HideInInspector] public float seed = 1234f;
-    [HideInInspector] public float startXWorld = 0f;
-    [HideInInspector] public float uvTilesX = 4f;
+   
+// These settings are controlled by the GroundStreamer
+[HideInInspector] public int segments;
+[HideInInspector] public float step;
+[HideInInspector] public float startXWorld;
+[HideInInspector] public float seed;
 
-    [SerializeField] private float offsetY = -1f;
+// These settings come from the BiomeProfile
+[HideInInspector] public BiomeProfile biome;
 
-    // Materials
-    public Material roadMaterial;
-    public Material stoneMaterial;
+// These are general chunk settings
+[HideInInspector] public float bottomY = -10f;
+[HideInInspector] public float uvTilesX = 4f;
+[Tooltip("Controls the size of the tiled stone texture. Smaller value = larger texture.")]
+public float stoneUvScale = 5f;
+[SerializeField] private float offsetY = -1f;
 
-    private MeshFilter roadMF, stoneMF;
-    private MeshRenderer roadMR, stoneMR;
-    private EdgeCollider2D edge;
+private MeshFilter roadMF, stoneMF;
+private MeshRenderer roadMR, stoneMR;
+// This is the new, corrected line
+[SerializeField] private PolygonCollider2D polyCollider;
 
     public float EndXWorld => startXWorld + segments * step;
 
     void Awake()
     {
-        // Create child objects
+        // Create child objects for meshes
         Transform roadGO = new GameObject("RoadMesh").transform;
         roadGO.parent = transform;
         roadGO.localPosition = Vector3.zero;
 
         roadMF = roadGO.gameObject.AddComponent<MeshFilter>();
         roadMR = roadGO.gameObject.AddComponent<MeshRenderer>();
-        roadMR.material = roadMaterial;
+      
 
         Transform stoneGO = new GameObject("StoneMesh").transform;
         stoneGO.parent = transform;
@@ -43,100 +45,143 @@ public class ProceduralGroundChunk : MonoBehaviour
 
         stoneMF = stoneGO.gameObject.AddComponent<MeshFilter>();
         stoneMR = stoneGO.gameObject.AddComponent<MeshRenderer>();
-        stoneMR.material = stoneMaterial;
+        
 
-        // EdgeCollider for car to ride on road
-        edge = gameObject.AddComponent<EdgeCollider2D>();
-    }
+        // New, improved code
+        // Try to get the component that's already on the object
+        polyCollider = GetComponent<PolygonCollider2D>();
+        // If it doesn't exist (returns null), then add it.
+        if (polyCollider == null)
+        {
+            polyCollider = gameObject.AddComponent<PolygonCollider2D>();
+        }
+            }
 
-    void Start()
-    {
-        Build();
-    }
-
+    // You can call this from an editor script or a manager to test generation
     public void Build()
     {
-        int topCount = segments + 1;
+        // --- Shared variables ---
+        int vertexCount = segments + 1;
+        float roadHeight = 0.2f;
 
-        // --- Road Mesh ---
-        Mesh roadMesh = new Mesh();
-        Vector3[] roadVertices = new Vector3[topCount * 2];
-        Vector2[] roadUVs = new Vector2[topCount * 2];
+        // --- Data arrays for Road Mesh ---
+        Vector3[] roadVertices = new Vector3[vertexCount * 2];
+        Vector2[] roadUVs = new Vector2[vertexCount * 2];
         int[] roadTris = new int[segments * 6];
-        Vector2[] edgePoints = new Vector2[topCount];
+        
 
+        // --- Data arrays for Stone Mesh ---
+        Vector3[] stoneVertices = new Vector3[vertexCount * 2];
+        Vector2[] stoneUVs = new Vector2[vertexCount * 2];
+        int[] stoneTris = new int[segments * 6];
+
+        // --- Single loop to generate all vertex data ---
         for (int i = 0; i <= segments; i++)
         {
             float xLocal = i * step;
             float xWorld = startXWorld + xLocal;
-            float yTop = baseY + Mathf.PerlinNoise((xWorld + seed) * noiseScale, 0f) * amplitude;
+            float yTop = biome.baseY + Mathf.PerlinNoise((xWorld + seed) * biome.noiseScale, 0f) * biome.amplitude;
 
-            float roadHeight = 0.2f; // <--- very thin stroke
-            roadVertices[i] = new Vector3(xLocal, yTop, 0f);
-            roadVertices[i + topCount] = new Vector3(xLocal, yTop - roadHeight, 0f); // small thickness
+            // --- Road Vertices ---
+            Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
+            Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
+            roadVertices[i] = roadTopVertex;
+            roadVertices[i + vertexCount] = roadBottomVertex;
 
+            // --- Stone Vertices ---
+            // The stone's top vertex is the same as the road's bottom vertex
+            stoneVertices[i] = roadBottomVertex;
+            // The stone's bottom vertex is at a fixed y-position
+            stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
+
+            // --- Road UVs ---
             float u = (float)i / segments * uvTilesX;
             roadUVs[i] = new Vector2(u, 1f);
-            roadUVs[i + topCount] = new Vector2(u, 0f);
+            roadUVs[i + vertexCount] = new Vector2(u, 0f);
 
-            edgePoints[i] = new Vector2(xLocal, yTop);
+            // --- Stone UVs (for Tiling Effect) ---
+            // We use the local position of the vertices to create a tiling effect
+            stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
+            stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
+
+            
         }
 
+        // --- Generate Triangles for Both Meshes ---
         int t = 0;
         for (int i = 0; i < segments; i++)
         {
             int a = i;
-            int b = i + topCount;
+            int b = i + vertexCount;
             int c = i + 1;
-            int d = i + topCount + 1;
+            int d = i + vertexCount + 1;
 
-            roadTris[t++] = a; roadTris[t++] = b; roadTris[t++] = c;
-            roadTris[t++] = c; roadTris[t++] = b; roadTris[t++] = d;
+            // Triangle 1
+            roadTris[t] = a;
+            roadTris[t + 1] = b;
+            roadTris[t + 2] = c;
+            // Triangle 2
+            roadTris[t + 3] = c;
+            roadTris[t + 4] = b;
+            roadTris[t + 5] = d;
+            
+            // The triangle structure is identical for the stone mesh
+            stoneTris[t] = a;
+            stoneTris[t + 1] = b;
+            stoneTris[t + 2] = c;
+            stoneTris[t + 3] = c;
+            stoneTris[t + 4] = b;
+            stoneTris[t + 5] = d;
+            
+            t += 6;
         }
+        
+        // --- Build Polygon Collider for the Road ---
+// The polygon needs points for the top surface and the bottom surface to form a closed shape.
+Vector2[] colliderPoints = new Vector2[vertexCount * 2];
+int pointIndex = 0;
 
+// First, trace the top of the road from left to right
+for (int i = 0; i < vertexCount; i++)
+{
+    colliderPoints[pointIndex] = roadVertices[i];
+    pointIndex++;
+}
+
+// Second, trace the bottom of the road from RIGHT to LEFT to complete the loop
+for (int i = vertexCount - 1; i >= 0; i--)
+{
+    colliderPoints[pointIndex] = roadVertices[i + vertexCount];
+    pointIndex++;
+}
+
+// Assign the completed shape to the PolygonCollider2D
+polyCollider.points = colliderPoints;
+
+       // --- Assign Materials from Biome ---
+        roadMR.material = biome.roadMaterial;
+stoneMR.material = biome.stoneMaterial;
+
+// --- Build Road Mesh ---
+Mesh roadMesh = new Mesh();
+// ... (rest of the method is the same)
         roadMesh.vertices = roadVertices;
         roadMesh.triangles = roadTris;
         roadMesh.uv = roadUVs;
-        roadMesh.RecalculateBounds();
         roadMesh.RecalculateNormals();
-
         roadMF.mesh = roadMesh;
-
-        // --- Stone Mesh (flat rectangle under road) ---
+        
+        // --- Build Stone Mesh ---
         Mesh stoneMesh = new Mesh();
-        Vector3[] stoneVertices = new Vector3[4]; // rectangle
-        Vector2[] stoneUVs = new Vector2[4];
-        int[] stoneTris = new int[6];
-
-        float width = segments * step;
-        float height = baseY - bottomY;
-
-        stoneVertices[0] = new Vector3(0, bottomY, 0);
-        stoneVertices[1] = new Vector3(width, bottomY, 0);
-        stoneVertices[2] = new Vector3(0, baseY, 0);
-        stoneVertices[3] = new Vector3(width, baseY, 0);
-
-        stoneUVs[0] = new Vector2(0, 0);
-        stoneUVs[1] = new Vector2(1, 0);
-        stoneUVs[2] = new Vector2(0, 1);
-        stoneUVs[3] = new Vector2(1, 1);
-
-        stoneTris[0] = 0; stoneTris[1] = 2; stoneTris[2] = 1;
-        stoneTris[3] = 1; stoneTris[4] = 2; stoneTris[5] = 3;
-
         stoneMesh.vertices = stoneVertices;
         stoneMesh.triangles = stoneTris;
         stoneMesh.uv = stoneUVs;
-        stoneMesh.RecalculateBounds();
         stoneMesh.RecalculateNormals();
-
         stoneMF.mesh = stoneMesh;
 
-        // --- Edge Collider ---
-        edge.useAdjacentStartPoint = false;
-        edge.useAdjacentEndPoint = false;
-        edge.points = edgePoints;
+      
 
+        // --- Position the Chunk ---
         transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
         transform.localScale = Vector3.one;
     }

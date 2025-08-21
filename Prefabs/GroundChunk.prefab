@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7877294792696310658}
   - component: {fileID: 6316621197958793808}
+  - component: {fileID: 6609352067710881280}
   m_Layer: 0
   m_Name: GroundChunk
   m_TagString: Untagged
@@ -48,16 +49,64 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   segments: 60
   step: 1
-  noiseScale: 0.05
-  amplitude: 6
-  baseY: 0
-  bottomY: -20
-  seed: 1234
   startXWorld: 0
+  seed: 1234
+  biome: {fileID: 0}
+  bottomY: -20
   uvTilesX: 4
+  stoneUvScale: 5
   offsetY: -5
-  roadMaterial: {fileID: 2100000, guid: 443df78855a0a7f40a35153c9dfbf75d, type: 2}
-  stoneMaterial: {fileID: 2100000, guid: ca27a1bc111ae6b4c92765ac2ddfc950, type: 2}
+  polyCollider: {fileID: 0}
+--- !u!60 &6609352067710881280
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3600310808872528989}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 1
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: 0, y: 1}
+      - {x: -0.95105654, y: 0.30901697}
+      - {x: -0.5877852, y: -0.80901706}
+      - {x: 0.58778536, y: -0.80901694}
+      - {x: 0.9510565, y: 0.30901712}
+  m_UseDelaunayMesh: 0
 --- !u!1 &6249815851567548226
 GameObject:
   m_ObjectHideFlags: 0
@@ -112,7 +161,8 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 443df78855a0a7f40a35153c9dfbf75d, type: 2}
+  - {fileID: 2100000, guid: 897063dc718748f4b87961589ca14e1e, type: 2}
+  - {fileID: 2100000, guid: 84d5e62fbdd0933499a65f9b7db89624, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -210,7 +260,7 @@ Transform:
   m_GameObject: {fileID: 7725801069534911446}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -236,7 +286,8 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ca27a1bc111ae6b4c92765ac2ddfc950, type: 2}
+  - {fileID: 2100000, guid: ceee1af8ef7905f4ba527e04525a2f27, type: 2}
+  - {fileID: 2100000, guid: 07cb1c5ee90e92244a092ddacca07972, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

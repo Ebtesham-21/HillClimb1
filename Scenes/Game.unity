@@ -596,7 +596,7 @@ Rigidbody2D:
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 4
+  m_Constraints: 0
 --- !u!4 &815232234
 Transform:
   m_ObjectHideFlags: 0
@@ -606,7 +606,7 @@ Transform:
   m_GameObject: {fileID: 815232231}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.53, y: 10.51, z: 0}
+  m_LocalPosition: {x: -6.53, y: 0.23, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -652,17 +652,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82d1b3646533535449e06bd9861c24f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  carBody: {fileID: 894264830}
   wheelFL: {fileID: 1945452005}
   wheelFR: {fileID: 2135121007}
-  carBody: {fileID: 894264830}
   wheelFLCollider: {fileID: 1945452007}
   wheelFRCollider: {fileID: 2135121009}
-  motorForce: 600
+  motorForce: 300
   wheelRotateSpeed: 20
-  tiltOnGround: 1
-  tiltInAir: 1
-  tiltSmooth: 5
-  maxTilt: 30
+  groundAlignmentSpeed: 5
+  bodyTiltOnGround: 2
+  airControlTorque: 50
+  tiltSmoothSpeed: 5
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
 --- !u!1 &894264829
 GameObject:
   m_ObjectHideFlags: 0
@@ -673,6 +676,7 @@ GameObject:
   m_Component:
   - component: {fileID: 894264830}
   - component: {fileID: 894264831}
+  - component: {fileID: 894264832}
   m_Layer: 0
   m_Name: Car Body
   m_TagString: Untagged
@@ -747,6 +751,51 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!61 &894264832
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894264829}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0.33094907}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 4.33, y: 1.73}
+    newSize: {x: 4.33, y: 1.73}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 4.33, y: 1.0681019}
+  m_EdgeRadius: 0
 --- !u!1 &953401578
 GameObject:
   m_ObjectHideFlags: 0
@@ -773,7 +822,7 @@ Transform:
   m_GameObject: {fileID: 953401578}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.33121336, y: 0.4, z: 187.6}
+  m_LocalPosition: {x: -0.33121336, y: 0.4, z: 346.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -805,7 +854,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1187820337}
   - component: {fileID: 1187820336}
-  m_Layer: 0
+  - component: {fileID: 1187820339}
+  - component: {fileID: 1187820338}
+  m_Layer: 6
   m_Name: GroundStreamer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -826,13 +877,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 815232234}
   chunkPrefab: {fileID: 6316621197958793808, guid: 6669c963b3316134eaa7ca79229e7975, type: 3}
+  availableBiomes:
+  - {fileID: 11400000, guid: 9da2bd02b0a1bee4996462f1f35bcd2d, type: 2}
+  - {fileID: 11400000, guid: d0d44d7dc98dd3a4aace6e5403c5782f, type: 2}
+  biomeChangeDistanceRange: {x: 1000, y: 2300}
   seed: 1234
-  noiseScale: 0.05
-  amplitude: 6
-  baseY: 0
   segmentsPerChunk: 60
   step: 1
-  bottomY: -20
+  bottomY: -100
   uvTilesX: 4
   chunksAhead: 4
   chunksBehind: 2
@@ -845,12 +897,82 @@ Transform:
   m_GameObject: {fileID: 1187820335}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.9041953, y: -3.42, z: -2.53}
+  m_LocalPosition: {x: -1.9041953, y: 1.64, z: -2.53}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!66 &1187820338
+CompositeCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187820335}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_GeometryType: 0
+  m_GenerationType: 0
+  m_EdgeRadius: 0
+  m_ColliderPaths: []
+  m_CompositePaths:
+    m_Paths: []
+  m_VertexDistance: 0.0005
+  m_OffsetDistance: 0.00005
+  m_UseDelaunayMesh: 0
+  m_CompositeGameObject: {fileID: 1187820335}
+--- !u!50 &1187820339
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187820335}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &1338418356
 GameObject:
   m_ObjectHideFlags: 0
@@ -1045,7 +1167,7 @@ Transform:
   m_GameObject: {fileID: 1637298549}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.33121336, y: -2.9, z: 172.5}
+  m_LocalPosition: {x: -0.33121336, y: -2.9, z: 207.73}
   m_LocalScale: {x: 1.56, y: 1.56, z: 1.56}
   m_ConstrainProportionsScale: 1
   m_Children:

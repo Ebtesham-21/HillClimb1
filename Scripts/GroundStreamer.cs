@@ -8,11 +8,17 @@ public class GroundStreamer : MonoBehaviour
     public Transform player;
     public ProceduralGroundChunk chunkPrefab;
 
-    [Header("Noise Settings")]
-    public float seed = 1234f;
-    public float noiseScale = 0.05f;
-    public float amplitude = 6f;
-    public float baseY = 0f;
+    [Header("Biome Management")]
+    [Tooltip("All the biomes that can be generated.")]
+    public BiomeProfile[] availableBiomes;
+    [Tooltip("The range in meters for how long a biome lasts before changing.")]
+    public Vector2 biomeChangeDistanceRange = new Vector2(1000f, 2300f);
+
+    private BiomeProfile currentBiome;
+    private float nextBiomeChangeDistance;
+
+[Header("Global Settings")]
+public float seed = 1234f;
 
     [Header("Chunk Settings")]
     public int segmentsPerChunk = 60;
@@ -28,24 +34,40 @@ public class GroundStreamer : MonoBehaviour
     private float ChunkWorldLength => segmentsPerChunk * step;
 
     void Start()
+{
+    if (!player || !chunkPrefab)
     {
-        if (!player || !chunkPrefab)
-        {
-            Debug.LogError("Assign player and chunk prefab on GroundStreamer");
-            enabled = false;
-            return;
-        }
-
-        // Start spawning around the player
-        float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
-        nextSpawnX = startX;
-
-        int total = chunksBehind + chunksAhead + 1;
-        for (int i = 0; i < total; i++) SpawnNextChunk();
+        Debug.LogError("Assign player and chunk prefab on GroundStreamer");
+        enabled = false;
+        return;
     }
+
+    if (availableBiomes.Length == 0)
+    {
+        Debug.LogError("No biomes assigned in the 'availableBiomes' array on GroundStreamer!");
+        enabled = false;
+        return;
+    }
+
+    // --- Biome Initialization ---
+    // Start with a random biome
+    currentBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
+    // Set the first distance for a biome change
+    nextBiomeChangeDistance = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
+    Debug.Log($"Starting with biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
+
+
+    // --- Original Spawning Logic ---
+    float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
+    nextSpawnX = startX;
+
+    int total = chunksBehind + chunksAhead + 1;
+    for (int i = 0; i < total; i++) SpawnNextChunk();
+}
 
     void Update()
     {
+        CheckForBiomeChange();
         float needUntil = player.position.x + chunksAhead * ChunkWorldLength;
         while (active.Last == null || active.Last.Value.EndXWorld < needUntil)
             SpawnNextChunk();
@@ -61,26 +83,57 @@ public class GroundStreamer : MonoBehaviour
         }
     }
 
-    void SpawnNextChunk()
+
+    void CheckForBiomeChange()
+{
+    // Check if the next chunk to be spawned is past the change threshold
+    if (nextSpawnX >= nextBiomeChangeDistance)
     {
-        var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
-
-        chunk.segments = segmentsPerChunk;
-        chunk.step = step;
-         chunk.noiseScale   = noiseScale;
-        chunk.amplitude    = amplitude;
-        chunk.baseY        = baseY;
-        chunk.bottomY      = bottomY;
-        chunk.seed         = seed;
-        chunk.startXWorld  = nextSpawnX;
-        chunk.uvTilesX     = uvTilesX;
-
-        chunk.Build();
-
-        active.AddLast(chunk);
-        nextSpawnX += ChunkWorldLength;
-
+        SwitchToNewBiome();
+        
+        // Calculate the next change point from the current position
+        float nextChange = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
+        nextBiomeChangeDistance += nextChange;
+        
+        Debug.Log($"Switching to biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
     }
+}
+
+void SwitchToNewBiome()
+{
+    // This loop ensures we don't randomly pick the same biome again
+    BiomeProfile newBiome;
+    do
+    {
+        newBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
+    } while (newBiome == currentBiome && availableBiomes.Length > 1); // Avoid infinite loop if only 1 biome exists
+
+    currentBiome = newBiome;
+}
+
+    void SpawnNextChunk()
+{
+    var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
+
+    // --- Assign all properties to the new chunk ---
+
+    // Assign the current biome profile. This contains materials and noise settings.
+    chunk.biome = currentBiome;
+
+    // Assign settings from the streamer
+    chunk.segments = segmentsPerChunk;
+    chunk.step = step;
+    chunk.bottomY = bottomY;
+    chunk.seed = seed;
+    chunk.startXWorld = nextSpawnX;
+    chunk.uvTilesX = uvTilesX;
+
+    // Now build the chunk using the assigned properties
+    chunk.Build();
+
+    active.AddLast(chunk);
+    nextSpawnX += ChunkWorldLength;
+}
 
 
 }
