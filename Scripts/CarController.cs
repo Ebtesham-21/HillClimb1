@@ -12,10 +12,21 @@ public class CarController : MonoBehaviour
     public Collider2D wheelFRCollider;
 
     [Header("Movement Settings")]
-    [Tooltip("The main force applied to move the car forward/backward.")]
-    public float motorForce = 2000f;
-    [Tooltip("How fast the wheel visuals spin.")]
-    public float wheelRotateSpeed = 20f;
+    [Tooltip("The maximum speed the car can reach.")]
+    public float maxSpeed = 50f;
+    [Tooltip("How quickly the car reaches max speed.")]
+    public float accelerationRate = 50f;
+    [Tooltip("How quickly the car stops when not accelerating.")]
+    public float decelerationRate = 100f;
+    [Tooltip("How much force is applied when braking (going in the opposite direction).")]
+    public float brakeForce = 300f;
+    // Your old motorForce variable can be removed or kept for reference
+    // public float motorForce = 2000f; 
+
+    // ... (keep the other variables) ...
+
+    // This public property will let our UI script easily read the car's speed
+    public float CurrentForwardSpeed { get; private set; }
 
     [Header("Ground Control")]
     [Tooltip("How quickly the car aligns itself to the slope of the ground.")]
@@ -55,25 +66,60 @@ public class CarController : MonoBehaviour
     }
 
     void FixedUpdate()
+{
+    // --- 1. Calculate current speed and target speed ---
+    // Vector2.Dot gives us the speed along the car's forward direction (positive if forward, negative if backward)
+    CurrentForwardSpeed = Vector2.Dot(rb.velocity, transform.right);
+
+    // The speed we want to be going
+    float targetSpeed = horizontalInput * maxSpeed;
+
+    // --- 2. Calculate the required acceleration ---
+    float speedDifference = targetSpeed - CurrentForwardSpeed;
+
+    // Determine if we are accelerating, decelerating, or braking
+    float acceleration = 0f;
+    if (Mathf.Abs(horizontalInput) > 0.1f && Mathf.Sign(horizontalInput) == Mathf.Sign(CurrentForwardSpeed))
     {
-        // Apply movement force
-        rb.AddForce(transform.right * horizontalInput * motorForce * Time.fixedDeltaTime);
-
-        // Rotate wheel visuals
-        wheelFL.Rotate(0, 0, -rb.velocity.magnitude * Mathf.Sign(horizontalInput) * 0.5f);
-        wheelFR.Rotate(0, 0, -rb.velocity.magnitude * Mathf.Sign(horizontalInput) * 0.5f);
-
-
-        // Check if the car is on the ground
-        if (IsGrounded())
-        {
-            HandleGroundControl();
-        }
-        else
-        {
-            HandleAirControl();
-        }
+        // Player is pressing the gas in the direction of motion
+        acceleration = accelerationRate;
     }
+    else if (Mathf.Abs(horizontalInput) > 0.1f && CurrentForwardSpeed != 0)
+    {
+        // Player is braking (pressing gas in the opposite direction of motion)
+        acceleration = brakeForce;
+    }
+    else
+    {
+        // Player is coasting (no input)
+        acceleration = decelerationRate;
+    }
+
+    // --- 3. Apply the force ---
+    // Only apply force if the car is on the ground
+    if (IsGrounded())
+    {
+        // Calculate the movement force
+        float movementForce = speedDifference * acceleration;
+        rb.AddForce(transform.right * movementForce * Time.fixedDeltaTime);
+    }
+
+
+    // --- 4. Handle Visuals and Ground Control (this part remains the same) ---
+    // This is a better way to calculate wheel spin based on actual velocity
+    float forwardVelocity = Vector2.Dot(rb.velocity, transform.right);
+    wheelFL.Rotate(0, 0, -forwardVelocity * 5f * Time.fixedDeltaTime);
+    wheelFR.Rotate(0, 0, -forwardVelocity * 5f * Time.fixedDeltaTime);
+
+    if (IsGrounded())
+    {
+        HandleGroundControl();
+    }
+    else
+    {
+        HandleAirControl();
+    }
+}
 
     void HandleGroundControl()
     {
