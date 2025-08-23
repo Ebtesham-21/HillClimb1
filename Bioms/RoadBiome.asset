@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe8de9eac8f9588438986e50a6f3374c, type: 3}
   m_Name: RoadBiome
   m_EditorClassIdentifier: 
-  biomeName: GrassyHillsBiome
-  noiseScale: 0.05
-  amplitude: 6
-  baseY: 0
+  biomeName: RoadBiome
+  baseYRange: {x: 0, y: 5}
+  amplitudeRange: {x: 2, y: 10}
+  noiseScaleRange: {x: 0.05, y: 0.13}
+  metaNoiseScale: 0.001
   roadMaterial: {fileID: 2100000, guid: 897063dc718748f4b87961589ca14e1e, type: 2}
   stoneMaterial: {fileID: 2100000, guid: ceee1af8ef7905f4ba527e04525a2f27, type: 2}

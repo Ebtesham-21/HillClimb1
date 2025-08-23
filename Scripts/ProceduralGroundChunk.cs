@@ -86,8 +86,24 @@ private MeshRenderer roadMR, stoneMR;
             float xLocal = i * step;
             float xWorld = startXWorld + xLocal;
             // This is the new, corrected line
-            float yTop = worldVerticalOffset + biome.baseY + Mathf.PerlinNoise((xWorld + seed) * biome.noiseScale, 0f) * biome.amplitude;
+            // --- DYNAMIC TERRAIN PARAMETER CALCULATION ---
+            // We use different large offsets for each meta-noise sample to ensure they are unique patterns.
 
+            // 1. Calculate the current Base Y using a low-frequency noise.
+            float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
+            float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
+
+            // 2. Calculate the current Amplitude.
+            float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
+            float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
+
+            // 3. Calculate the current Noise Scale (frequency).
+            float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
+            float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
+
+            // 4. Finally, calculate the main terrain height using these dynamic, ever-changing parameters.
+            float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
+            float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
             // --- Road Vertices ---
             Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
             Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
