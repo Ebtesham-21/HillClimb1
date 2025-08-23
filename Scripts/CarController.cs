@@ -11,6 +11,19 @@ public class CarController : MonoBehaviour
     public Collider2D wheelFLCollider;
     public Collider2D wheelFRCollider;
 
+
+    
+
+    [Header("Fuel System")]
+    [Tooltip("The maximum amount of fuel the car can hold.")]
+    public float maxFuel = 100f;
+    [Tooltip("How much fuel is consumed per second when accelerating.")]
+    public float fuelConsumptionRate = 2.5f;
+
+    // Public properties for other scripts (like our UI) to read
+    public float CurrentFuel { get; private set; }
+    public bool HasFuel { get; private set; }
+
     [Header("Movement Settings")]
     [Tooltip("The maximum speed the car can reach.")]
     public float maxSpeed = 50f;
@@ -45,11 +58,14 @@ public class CarController : MonoBehaviour
     public LayerMask groundLayer; // <-- NEW!
 
     private Rigidbody2D rb;
-    private float horizontalInput;
+    public float HorizontalInput { get; private set; }
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+         // --- Initialize Fuel ---
+        CurrentFuel = maxFuel;
+        HasFuel = true;
 
         // This auto-finding logic is good!
         if (wheelFLCollider == null) wheelFLCollider = transform.Find("WheelFL").GetComponent<Collider2D>();
@@ -62,7 +78,24 @@ public class CarController : MonoBehaviour
     // Get input here, so it's not missed between physics frames
     void Update()
     {
-        horizontalInput = Input.GetAxis("Horizontal");
+        HorizontalInput = Input.GetAxis("Horizontal");
+        ConsumeFuel();
+    }
+    void ConsumeFuel()
+    {
+        // Only consume fuel if we are trying to accelerate and have fuel left
+        if (HasFuel && HorizontalInput > 0.1f && IsGrounded())
+        {
+            CurrentFuel -= fuelConsumptionRate * Time.deltaTime;
+
+            // Clamp the fuel to a minimum of 0
+            if (CurrentFuel <= 0)
+            {
+                CurrentFuel = 0;
+                HasFuel = false;
+                Debug.Log("Out of Fuel!");
+            }
+        }
     }
 
     void FixedUpdate()
@@ -72,19 +105,19 @@ public class CarController : MonoBehaviour
     CurrentForwardSpeed = Vector2.Dot(rb.velocity, transform.right);
 
     // The speed we want to be going
-    float targetSpeed = horizontalInput * maxSpeed;
+    float targetSpeed = HorizontalInput * maxSpeed;
 
     // --- 2. Calculate the required acceleration ---
     float speedDifference = targetSpeed - CurrentForwardSpeed;
 
     // Determine if we are accelerating, decelerating, or braking
     float acceleration = 0f;
-    if (Mathf.Abs(horizontalInput) > 0.1f && Mathf.Sign(horizontalInput) == Mathf.Sign(CurrentForwardSpeed))
+    if (Mathf.Abs(HorizontalInput) > 0.1f && Mathf.Sign(HorizontalInput) == Mathf.Sign(CurrentForwardSpeed))
     {
         // Player is pressing the gas in the direction of motion
         acceleration = accelerationRate;
     }
-    else if (Mathf.Abs(horizontalInput) > 0.1f && CurrentForwardSpeed != 0)
+    else if (Mathf.Abs(HorizontalInput) > 0.1f && CurrentForwardSpeed != 0)
     {
         // Player is braking (pressing gas in the opposite direction of motion)
         acceleration = brakeForce;
@@ -97,13 +130,12 @@ public class CarController : MonoBehaviour
 
     // --- 3. Apply the force ---
     // Only apply force if the car is on the ground
-    if (IsGrounded())
-    {
-        // Calculate the movement force
-        float movementForce = speedDifference * acceleration;
-        rb.AddForce(transform.right * movementForce * Time.fixedDeltaTime);
-    }
-
+    if (IsGrounded() && HasFuel)
+{
+    // Calculate the movement force
+    float movementForce = speedDifference * acceleration;
+    rb.AddForce(transform.right * movementForce * Time.fixedDeltaTime);
+}
 
     // --- 4. Handle Visuals and Ground Control (this part remains the same) ---
     // This is a better way to calculate wheel spin based on actual velocity
@@ -139,10 +171,10 @@ public class CarController : MonoBehaviour
 
         // --- 2. Tilt ONLY THE BODY for acceleration/braking effect ---
         float targetBodyTilt = 0f;
-        if (Mathf.Abs(horizontalInput) > 0.1f)
+        if (Mathf.Abs(HorizontalInput) > 0.1f)
         {
             // Tilt based on input direction
-            targetBodyTilt = -horizontalInput * bodyTiltOnGround;
+            targetBodyTilt = -HorizontalInput * bodyTiltOnGround;
         }
 
         // Smoothly apply the local tilt to the car body
@@ -153,7 +185,7 @@ public class CarController : MonoBehaviour
     void HandleAirControl()
     {
         // --- 1. Apply torque to rotate the ENTIRE CAR in the air ---
-        rb.AddTorque(-horizontalInput * airControlTorque * Time.fixedDeltaTime);
+        rb.AddTorque(-HorizontalInput * airControlTorque * Time.fixedDeltaTime);
 
         // --- 2. Reset the visual body tilt ---
         // This ensures the body doesn't keep its acceleration tilt while airborne
