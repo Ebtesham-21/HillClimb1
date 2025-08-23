@@ -1361,6 +1361,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 35279684628410667, guid: 696c5b3043d079d4ea1501fa04753c2b, type: 3}
+      propertyPath: m_Interpolate
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1505314118038858885, guid: 696c5b3043d079d4ea1501fa04753c2b, type: 3}
       propertyPath: maxMotorTorque
       value: 10000

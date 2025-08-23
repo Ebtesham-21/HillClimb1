@@ -132,7 +132,7 @@ void SwitchToNewBiome()
     chunk.uvTilesX = uvTilesX;
 
     // Now build the chunk using the assigned properties
-    chunk.Build();
+    StartCoroutine(chunk.BuildRoutine());
 
     active.AddLast(chunk);
     nextSpawnX += ChunkWorldLength;
