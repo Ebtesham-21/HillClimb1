@@ -2,78 +2,72 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    // --- (Keep all your existing Headers and Variables here, they are fine) ---
-    // [Header("References")] ...
-    // [Header("Fuel System")] ...
-    // [Header("Movement Settings")] ...
-    // [Header("Ground Control")] ...
-    // [Header("Air Control")] ...
-    // [Header("General Settings")] ...
-
-    // --- (Declare all your variables as before) ---
+    // --- REFERENCES ---
     [Header("References")]
     public Transform carBody;
-    public Transform wheelFL;
-    public Transform wheelFR;
+    public Transform wheelFL; // Still needed for the raycast
+    public Transform wheelFR; // Still needed for the raycast
     public Collider2D wheelFLCollider;
     public Collider2D wheelFRCollider;
 
+    // --- NEW: References for the new physics model ---
+    [Header("Physics References")]
+    public WheelJoint2D backWheelJoint;
+    public WheelJoint2D frontWheelJoint;
+    private JointMotor2D motor; // We will configure and reuse this
+
+    // --- FUEL SYSTEM (No changes needed) ---
     [Header("Fuel System")]
     public float maxFuel = 100f;
     public float fuelConsumptionRate = 2.5f;
     public float CurrentFuel { get; private set; }
     public bool HasFuel { get; private set; }
 
+    // --- MOVEMENT SETTINGS (Modified) ---
     [Header("Movement Settings")]
-    public float maxSpeed = 50f;
-    public float accelerationRate = 50f;
-    public float decelerationRate = 100f;
-    public float brakeForce = 300f;
-    public float CurrentForwardSpeed { get; private set; }
+    [Tooltip("The speed of the motor on the wheels.")]
+    public float motorSpeed = 2500f;
+    [Tooltip("The maximum torque the motor can apply to the wheels.")]
+    public float maxMotorTorque = 1000f;
+    public float CurrentForwardSpeed { get; private set; } // We still calculate this for the UI
 
-    [Header("Ground Control")]
-    public float groundAlignmentSpeed = 5f;
-    public float bodyTiltOnGround = 15f;
-
+    // --- AIR CONTROL (No changes needed) ---
     [Header("Air Control")]
-    public float airControlTorque = 50f;
+    public float airControlTorque = 300f;
 
+    // --- VISUALS & GENERAL SETTINGS (Modified) ---
     [Header("General Settings")]
+    public float bodyTiltOnGround = 15f;
     public float tiltSmoothSpeed = 5f;
     public LayerMask groundLayer;
-
-    private Rigidbody2D rb;
-    public float HorizontalInput { get; private set; }
     
-    // --- NEW: For Visual Wheel Rotation ---
-    private float wheelAngle = 0f;
+    private Rigidbody2D rb; // This now refers to the car BODY's rigidbody
+    public float HorizontalInput { get; private set; }
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>(); // Gets the Rigidbody2D of the car body
         CurrentFuel = maxFuel;
         HasFuel = true;
 
-        if (wheelFLCollider == null) wheelFLCollider = transform.Find("WheelFL").GetComponent<Collider2D>();
-        if (wheelFRCollider == null) wheelFRCollider = transform.Find("WheelFR").GetComponent<Collider2D>();
-        if (wheelFL == null) wheelFL = transform.Find("WheelFL");
-        if (wheelFR == null) wheelFR = transform.Find("WheelFR");
-        if (carBody == null) carBody = transform.Find("Body");
+        // Initialize the motor struct
+        motor = new JointMotor2D();
     }
 
     void Update()
     {
         HorizontalInput = Input.GetAxis("Horizontal");
         ConsumeFuel();
+        Debug.Log("Input Value: " + HorizontalInput); // <-- ADD THIS LINE
         
-        // --- NEW: Handle VISUAL wheel rotation in Update ---
-        // This is now decoupled from physics and will always be smooth.
-        HandleVisualWheelRotation();
+        // VISUAL wheel rotation is now handled automatically by the wheel's Rigidbody2D.
+        // The old HandleVisualWheelRotation() method can be deleted.
     }
-    
-    // --- (The ConsumeFuel method is fine, no changes needed) ---
+
     void ConsumeFuel()
     {
+        // This logic is perfect, but we'll use our new IsGrounded() check.
+        // We only consume fuel if ACCELERATING FORWARD.
         if (HasFuel && HorizontalInput > 0.1f && IsGrounded())
         {
             CurrentFuel -= fuelConsumptionRate * Time.deltaTime;
@@ -87,90 +81,56 @@ public class CarController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // --- (The Movement Logic is fine, no changes needed) ---
-        CurrentForwardSpeed = Vector2.Dot(rb.velocity, transform.right);
-        float targetSpeed = HorizontalInput * maxSpeed;
-        float speedDifference = targetSpeed - CurrentForwardSpeed;
-        
-        float acceleration = 0f;
-        if (Mathf.Abs(HorizontalInput) > 0.1f && Mathf.Sign(HorizontalInput) == Mathf.Sign(CurrentForwardSpeed))
-            acceleration = accelerationRate;
-        else if (Mathf.Abs(HorizontalInput) > 0.1f && CurrentForwardSpeed != 0)
-            acceleration = brakeForce;
-        else
-            acceleration = decelerationRate;
 
-        if (IsGrounded() && HasFuel)
+        Debug.Log("IsGrounded check: " + IsGrounded() + " | HasFuel check: " + HasFuel); // <-- ADD THIS LINE
+        // We still calculate this for the speedometer UI.
+        CurrentForwardSpeed = Vector2.Dot(rb.velocity, transform.right);
+
+        // --- NEW MOVEMENT LOGIC using WheelJoint Motors ---
+        if (HasFuel && IsGrounded())
         {
-            float movementForce = speedDifference * acceleration;
-            rb.AddForce(transform.right * movementForce * Time.fixedDeltaTime);
+            // Apply motor torque based on player input
+            motor.motorSpeed = -HorizontalInput * motorSpeed;
+            motor.maxMotorTorque = maxMotorTorque;
         }
-        
-        // --- (Handle Ground/Air Control) ---
+        else
+        {
+            // No fuel or in the air, turn off the motor
+            motor.motorSpeed = 0;
+            motor.maxMotorTorque = maxMotorTorque; // Can keep torque to allow for braking
+        }
+
+        // Apply the motor configuration to both wheels
+        backWheelJoint.motor = motor;
+        frontWheelJoint.motor = motor;
+
+        // --- MODIFIED Ground/Air Control ---
         if (IsGrounded())
         {
-            HandleGroundControl(); // <-- This method is now completely rewritten
+            // The physical ground alignment is now automatic thanks to the joints.
+            // We only need to handle the VISUAL body tilt here.
+            float targetBodyTilt = -HorizontalInput * bodyTiltOnGround;
+            carBody.localEulerAngles = new Vector3(0, 0,
+                Mathf.LerpAngle(carBody.localEulerAngles.z, targetBodyTilt, Time.fixedDeltaTime * tiltSmoothSpeed));
         }
         else
         {
-            HandleAirControl(); // <-- This method is fine
+            // Air control logic is still perfect
+            HandleAirControl();
         }
     }
-    
-    // --- NEW: Rewritten Method for Smooth Ground Alignment ---
-    void HandleGroundControl()
-    {
-        // --- 1. Cast two rays, one from each wheel ---
-        RaycastHit2D hitFront = Physics2D.Raycast(wheelFL.position, -transform.up, 2f, groundLayer);
-        RaycastHit2D hitRear = Physics2D.Raycast(wheelFR.position, -transform.up, 2f, groundLayer);
-        
-        // --- 2. Calculate the average normal vector of the ground ---
-        // This gives us the true "average slope" between the two wheels.
-        Vector2 averageNormal = (hitFront.normal + hitRear.normal).normalized;
 
-        // --- 3. Calculate the target angle from the average normal ---
-        // We only proceed if at least one wheel is touching the ground.
-        if (hitFront.collider != null || hitRear.collider != null)
-        {
-            float targetAngle = Vector2.SignedAngle(Vector2.up, averageNormal);
-            
-            // --- 4. Smoothly rotate the Rigidbody to match the average angle ---
-            // This will feel much more stable and removes the "seesaw" effect.
-            float newRotation = Mathf.LerpAngle(rb.rotation, targetAngle, groundAlignmentSpeed * Time.fixedDeltaTime);
-            rb.MoveRotation(newRotation);
-        }
-
-        // --- 5. Tilt the body visually (this logic is still good) ---
-        float targetBodyTilt = -HorizontalInput * bodyTiltOnGround;
-        carBody.localEulerAngles = new Vector3(0, 0,
-            Mathf.LerpAngle(carBody.localEulerAngles.z, targetBodyTilt, Time.fixedDeltaTime * tiltSmoothSpeed));
-    }
-    
-    // --- NEW: Method for Visual Wheel Rotation ---
-    void HandleVisualWheelRotation()
-    {
-        // Calculate how much to rotate based on the car's actual forward speed
-        float rotationAmount = CurrentForwardSpeed * 360f / (2f * Mathf.PI * 0.5f); // Approximation using wheel circumference
-        
-        // Add this frame's rotation to our total angle
-        wheelAngle += rotationAmount * Time.deltaTime;
-        
-        // Apply the rotation directly to the localEulerAngles.
-        // This is not affected by the parent's physics rotation.
-        wheelFL.localEulerAngles = new Vector3(0, 0, -wheelAngle);
-        wheelFR.localEulerAngles = new Vector3(0, 0, -wheelAngle);
-    }
-    
-    // --- (Air Control and IsGrounded methods are fine, no changes needed) ---
     void HandleAirControl()
     {
-        rb.AddTorque(-HorizontalInput * airControlTorque * Time.fixedDeltaTime);
-        carBody.localEulerAngles = new Vector3(0, 0, 
+        rb.AddTorque(HorizontalInput * airControlTorque * Time.fixedDeltaTime);
+        // Reset the visual tilt when in the air
+        carBody.localEulerAngles = new Vector3(0, 0,
             Mathf.LerpAngle(carBody.localEulerAngles.z, 0, Time.fixedDeltaTime * tiltSmoothSpeed));
     }
 
     bool IsGrounded()
     {
+        // This check is still valid and works perfectly.
         return wheelFLCollider.IsTouchingLayers(groundLayer) || wheelFRCollider.IsTouchingLayers(groundLayer);
     }
 }
