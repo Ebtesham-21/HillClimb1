@@ -427,10 +427,10 @@ MonoBehaviour:
   frontWheelJoint: {fileID: 4393253986086987027}
   maxFuel: 100
   fuelConsumptionRate: 2.5
-  motorSpeed: 10000
-  maxMotorTorque: 5000
+  motorSpeed: 1000
+  maxMotorTorque: 2000
   airControlTorque: 300
-  bodyTiltOnGround: 5
+  bodyTiltOnGround: 1
   tiltSmoothSpeed: 5
   groundLayer:
     serializedVersion: 2
