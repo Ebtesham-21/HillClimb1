@@ -21,6 +21,8 @@ public class GroundStreamer : MonoBehaviour
 public float seed = 1234f;
 
     [Header("Chunk Settings")]
+    [Tooltip("The vertical offset for the entire generated world.")]
+    public float worldVerticalOffset = 0f; // <-- ADD THIS LINE
     public int segmentsPerChunk = 60;
     public float step = 1f;
     public float bottomY = -20f;
@@ -123,6 +125,7 @@ void SwitchToNewBiome()
     // Assign settings from the streamer
     chunk.segments = segmentsPerChunk;
     chunk.step = step;
+    chunk.worldVerticalOffset = worldVerticalOffset; // <-- ADD THIS LINE
     chunk.bottomY = bottomY;
     chunk.seed = seed;
     chunk.startXWorld = nextSpawnX;

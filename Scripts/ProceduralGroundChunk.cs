@@ -11,8 +11,13 @@ public class ProceduralGroundChunk : MonoBehaviour
 [HideInInspector] public float startXWorld;
 [HideInInspector] public float seed;
 
-// These settings come from the BiomeProfile
-[HideInInspector] public BiomeProfile biome;
+[HideInInspector] public float worldVerticalOffset; // <-- ADD THIS LINE
+
+
+
+
+    // These settings come from the BiomeProfile
+    [HideInInspector] public BiomeProfile biome;
 
 // These are general chunk settings
 [HideInInspector] public float bottomY = -10f;
@@ -80,7 +85,8 @@ private MeshRenderer roadMR, stoneMR;
         {
             float xLocal = i * step;
             float xWorld = startXWorld + xLocal;
-            float yTop = biome.baseY + Mathf.PerlinNoise((xWorld + seed) * biome.noiseScale, 0f) * biome.amplitude;
+            // This is the new, corrected line
+            float yTop = worldVerticalOffset + biome.baseY + Mathf.PerlinNoise((xWorld + seed) * biome.noiseScale, 0f) * biome.amplitude;
 
             // --- Road Vertices ---
             Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
