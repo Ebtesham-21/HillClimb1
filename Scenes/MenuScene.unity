@@ -155,6 +155,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 86c229e89ae48fa49a983deec02e1bc1, type: 2}
   carSpawnPoint: {fileID: 1589889918}
   carNameText: {fileID: 935858556}
+  menuCarScale: {x: 2, y: 2, z: 1}
 --- !u!4 &169067762
 Transform:
   m_ObjectHideFlags: 0
@@ -164,8 +165,8 @@ Transform:
   m_GameObject: {fileID: 169067760}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 599, y: 354, z: -7.6925507}
-  m_LocalScale: {x: 99.55, y: 99.55, z: 99.55}
+  m_LocalPosition: {x: -0.03, y: -0.1, z: 88.29}
+  m_LocalScale: {x: 5.01, y: 5.01, z: 5.01}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -181,7 +182,7 @@ GameObject:
   - component: {fileID: 184671328}
   - component: {fileID: 184671330}
   - component: {fileID: 184671329}
-  m_Layer: 3
+  m_Layer: 5
   m_Name: BackGroundImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -514,8 +515,8 @@ Canvas:
   m_GameObject: {fileID: 758535562}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_RenderMode: 1
+  m_Camera: {fileID: 1918619703}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -696,7 +697,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1589889918}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CarSpawnPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -712,8 +713,8 @@ Transform:
   m_GameObject: {fileID: 1589889917}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 629, y: 354, z: -7.6925507}
-  m_LocalScale: {x: 66.6, y: 66.6, z: 66.6}
+  m_LocalPosition: {x: -0.17, y: -0.22, z: -7.6925507}
+  m_LocalScale: {x: 4.25, y: 4.25, z: 4.25}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}

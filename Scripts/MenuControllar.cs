@@ -8,6 +8,10 @@ public class MenuController : MonoBehaviour
     public Transform carSpawnPoint; // An empty GameObject where the car will appear
     public TextMeshProUGUI carNameText; // The text to display the name
 
+    [Header("Menu Display Settings")] // A new header for clarity
+    [Tooltip("The scale to apply to the car model when displayed in the menu.")]
+    public Vector3 menuCarScale = new Vector3(2f, 2f, 1f); // Make it twice as big by default
+
     private int currentCarIndex = 0;
     private GameObject currentCarInstance;
 
@@ -42,10 +46,12 @@ public class MenuController : MonoBehaviour
     // Spawn the new car model
     currentCarInstance = Instantiate(allCars[currentCarIndex].carPrefab, carSpawnPoint.position, carSpawnPoint.rotation);
     carNameText.text = allCars[currentCarIndex].carName;
+    
+    currentCarInstance.transform.localScale = menuCarScale;
 
     // --- NEW: Disable all physics components on the spawned car ---
-    // This stops it from falling or reacting to physics in the menu.
-    Rigidbody2D[] allRigidbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
+        // This stops it from falling or reacting to physics in the menu.
+        Rigidbody2D[] allRigidbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
     foreach (Rigidbody2D rb in allRigidbodies)
     {
         rb.simulated = false; // 'simulated = false' is the best way to turn off physics

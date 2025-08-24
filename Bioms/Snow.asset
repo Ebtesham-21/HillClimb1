@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Snow
   m_EditorClassIdentifier: 
   biomeName: Snow
-  baseYRange: {x: 0, y: 7}
-  amplitudeRange: {x: 8, y: 20}
-  noiseScaleRange: {x: 0.05, y: 0.16}
+  baseYRange: {x: 0, y: 5}
+  amplitudeRange: {x: 5, y: 10}
+  noiseScaleRange: {x: -0.03, y: 0.16}
   metaNoiseScale: 0.001
   roadMaterial: {fileID: 2100000, guid: 84d5e62fbdd0933499a65f9b7db89624, type: 2}
   stoneMaterial: {fileID: 2100000, guid: 07cb1c5ee90e92244a092ddacca07972, type: 2}

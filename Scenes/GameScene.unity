@@ -1276,7 +1276,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skyMaterial: {fileID: 2100000, guid: b8b1f85d7ee2e3943bbb91ec1018a610, type: 2}
-  transitionDuration: 10
+  transitionDuration: 5
   timeBetweenChanges: {x: 30, y: 45}
 --- !u!114 &1983124134
 MonoBehaviour:
