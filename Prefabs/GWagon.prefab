@@ -164,7 +164,7 @@ GameObject:
   - component: {fileID: 4245286462638976724}
   - component: {fileID: 1505314118038858885}
   m_Layer: 0
-  m_Name: Car Body
+  m_Name: GWagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

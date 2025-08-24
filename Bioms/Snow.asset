@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Snow
   m_EditorClassIdentifier: 
   biomeName: Snow
-  baseYRange: {x: 0, y: 10}
+  baseYRange: {x: 0, y: 7}
   amplitudeRange: {x: 8, y: 20}
   noiseScaleRange: {x: 0.05, y: 0.16}
   metaNoiseScale: 0.001

@@ -26,7 +26,7 @@ public class GameManager : MonoBehaviour
     }
 
 
-    public static void LoadScence(string scenceName)
+    public static void LoadScene(string scenceName)
     {
         sceneToLoad = scenceName;
         SceneManager.LoadScene("LoaderScene");
