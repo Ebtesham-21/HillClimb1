@@ -40,6 +40,12 @@ public float seed = 1234f;
     [Range(0f, 1f)] public float coinSpawnChance = 0.25f; // 25% chance
     public float coinHeightOffset = 1.5f; // How high above the ground coins spawn
 
+    // --- NEW: Fuel Can Controls ---
+    public GameObject fuelCanPrefab;
+    [Tooltip("Fuel cans are rarer than coins.")]
+    [Range(0f, 1f)] public float fuelCanSpawnChance = 0.05f; // 5% chance
+    public float fuelCanHeightOffset = 1.0f; // Place it a bit lower than coins
+
     void Start()
 {
     if (!player || !chunkPrefab)
@@ -131,6 +137,12 @@ void SwitchToNewBiome()
         chunk.coinPrefab = coinPrefab;
         chunk.coinSpawnChance = coinSpawnChance;
         chunk.coinHeightOffset = coinHeightOffset;
+
+        // --- NEW: Pass fuel can settings to the chunk ---
+        chunk.fuelCanPrefab = fuelCanPrefab;
+        chunk.fuelCanSpawnChance = fuelCanSpawnChance;
+        chunk.fuelCanHeightOffset = fuelCanHeightOffset;
+
 
         StartCoroutine(chunk.BuildRoutine());
 

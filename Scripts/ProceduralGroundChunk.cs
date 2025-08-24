@@ -16,6 +16,10 @@ public class ProceduralGroundChunk : MonoBehaviour
     [HideInInspector] public float coinSpawnChance;
     [HideInInspector] public float coinHeightOffset;
 
+    // --- NEW: Fuel Can Spawning Variables ---
+    [HideInInspector] public GameObject fuelCanPrefab;
+    [HideInInspector] public float fuelCanSpawnChance;
+    [HideInInspector] public float fuelCanHeightOffset;
 
 
 
@@ -68,108 +72,114 @@ public class ProceduralGroundChunk : MonoBehaviour
     // You can call this from an editor script or a manager to test generation
     // You can call this from the GroundStreamer to start the build process
     public IEnumerator BuildRoutine()
+{
+    // --- Shared variables ---
+    int vertexCount = segments + 1;
+    float roadHeight = 0.2f;
+
+    // --- Data arrays ---
+    Vector3[] roadVertices = new Vector3[vertexCount * 2];
+    Vector2[] roadUVs = new Vector2[vertexCount * 2];
+    int[] roadTris = new int[segments * 6];
+    Vector3[] stoneVertices = new Vector3[vertexCount * 2];
+    Vector2[] stoneUVs = new Vector2[vertexCount * 2];
+    int[] stoneTris = new int[segments * 6];
+    Vector2[] colliderPoints = new Vector2[vertexCount * 2];
+
+    // --- Generate all vertex data AND SPAWN OBJECTS---
+    for (int i = 0; i <= segments; i++)
     {
-        // --- Shared variables ---
-        int vertexCount = segments + 1;
-        float roadHeight = 0.2f;
+        float xLocal = i * step;
+        float xWorld = startXWorld + xLocal;
 
-        // --- Data arrays ---
-        Vector3[] roadVertices = new Vector3[vertexCount * 2];
-        Vector2[] roadUVs = new Vector2[vertexCount * 2];
-        int[] roadTris = new int[segments * 6];
-        Vector3[] stoneVertices = new Vector3[vertexCount * 2];
-        Vector2[] stoneUVs = new Vector2[vertexCount * 2];
-        int[] stoneTris = new int[segments * 6];
-        Vector2[] colliderPoints = new Vector2[vertexCount * 2];
+        // Dynamic parameter calculation...
+        float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
+        float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
+        float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
+        float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
+        float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
+        float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
+        float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
+        float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
 
-        // --- Generate all vertex data ---
-        // This part is reasonably fast, so we can do it all at once.
-        for (int i = 0; i <= segments; i++)
+        // --- Object Spawning Logic ---
+        // Check if we should spawn an object at this point.
+        if (i > 0 && i < segments && i % 5 == 0) // We'll check every 5th segment
         {
-            float xLocal = i * step;
-            float xWorld = startXWorld + xLocal;
-
-            // Dynamic parameter calculation...
-            float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
-            float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
-            float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
-            float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
-            float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
-            float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
-            float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
-            float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
-            // --- NEW: Coin Spawning Logic ---
-            // We check every few segments to avoid spawning coins too close together.
-            if (i > 0 && i < segments && i % 5 == 0) // e.g., check every 5th segment
+            // First, try to spawn a fuel can (rarer)
+            if (Random.value < fuelCanSpawnChance)
             {
-                if (Random.value < coinSpawnChance)
-                {
-                    Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
-                    Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
-                }
+                Vector3 canPos = new Vector3(xLocal, yTop + fuelCanHeightOffset, 0);
+                // We use transform.TransformPoint to convert the local position to a world position for the new object
+                Instantiate(fuelCanPrefab, transform.TransformPoint(canPos), Quaternion.identity, transform);
             }
-
-            // Vertex calculations...
-            Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
-            Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
-            roadVertices[i] = roadTopVertex;
-            roadVertices[i + vertexCount] = roadBottomVertex;
-            stoneVertices[i] = roadBottomVertex;
-            stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
-
-            // UVs and Collider points...
-            float u = (float)i / segments * uvTilesX;
-            roadUVs[i] = new Vector2(u, 1f);
-            roadUVs[i + vertexCount] = new Vector2(u, 0f);
-            stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
-            stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
+            // If we didn't spawn a fuel can, then try for a coin
+            else if (Random.value < coinSpawnChance)
+            {
+                Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
+                Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
+            }
         }
 
-        // --- PAUSE EXECUTION ---
-        // We've done all the math. Let the game render a frame before we do heavy mesh creation.
-        yield return null;
+        // Vertex calculations...
+        Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
+        Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
+        roadVertices[i] = roadTopVertex;
+        roadVertices[i + vertexCount] = roadBottomVertex;
+        stoneVertices[i] = roadBottomVertex;
+        stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
 
-        // --- Generate Triangles ---
-        int t = 0;
-        for (int i = 0; i < segments; i++)
-        {
-            int a = i; int b = i + vertexCount; int c = i + 1; int d = i + vertexCount + 1;
-            roadTris[t] = a; roadTris[t + 1] = b; roadTris[t + 2] = c;
-            roadTris[t + 3] = c; roadTris[t + 4] = b; roadTris[t + 5] = d;
-            stoneTris[t] = a; stoneTris[t + 1] = b; stoneTris[t + 2] = c;
-            stoneTris[t + 3] = c; stoneTris[t + 4] = b; stoneTris[t + 5] = d;
-            t += 6;
-        }
+        // UVs...
+        float u = (float)i / segments * uvTilesX;
+        roadUVs[i] = new Vector2(u, 1f);
+        roadUVs[i + vertexCount] = new Vector2(u, 0f);
+        stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
+        stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
+    } // <-- THIS IS THE CORRECT PLACE FOR THE LOOP TO END
 
-        // --- PAUSE EXECUTION AGAIN ---
-        // Let's take another break before the final, heaviest part.
-        yield return null;
+    // --- PAUSE EXECUTION ---
+    yield return null;
 
-        // --- Build Meshes and Collider ---
-        // This is the heaviest part. We do it last.
-        Mesh roadMesh = new Mesh();
-        roadMesh.vertices = roadVertices;
-        roadMesh.triangles = roadTris;
-        roadMesh.uv = roadUVs;
-        roadMesh.RecalculateNormals();
-        roadMF.mesh = roadMesh;
-
-        Mesh stoneMesh = new Mesh();
-        stoneMesh.vertices = stoneVertices;
-        stoneMesh.triangles = stoneTris;
-        stoneMesh.uv = stoneUVs;
-        stoneMesh.RecalculateNormals();
-        stoneMF.mesh = stoneMesh;
-
-        int pointIndex = 0;
-        for (int i = 0; i < vertexCount; i++) { colliderPoints[pointIndex] = roadVertices[i]; pointIndex++; }
-        for (int i = vertexCount - 1; i >= 0; i--) { colliderPoints[pointIndex] = roadVertices[i + vertexCount]; pointIndex++; }
-        polyCollider.points = colliderPoints;
-
-        roadMR.material = biome.roadMaterial;
-        stoneMR.material = biome.stoneMaterial;
-
-        transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
-        transform.localScale = Vector3.one;
+    // --- Generate Triangles ---
+    int t = 0;
+    for (int i = 0; i < segments; i++)
+    {
+        int a = i; int b = i + vertexCount; int c = i + 1; int d = i + vertexCount + 1;
+        // Corrected triangle winding order for 3D shaders
+        roadTris[t] = a; roadTris[t + 1] = b; roadTris[t + 2] = c;
+        roadTris[t + 3] = d; roadTris[t + 4] = b; roadTris[t + 5] = c;
+        stoneTris[t] = a; stoneTris[t + 1] = b; stoneTris[t + 2] = c;
+        stoneTris[t + 3] = d; stoneTris[t + 4] = b; stoneTris[t + 5] = c;
+        t += 6;
     }
+
+    // --- PAUSE EXECUTION AGAIN ---
+    yield return null;
+
+    // --- Build Meshes and Collider ---
+    Mesh roadMesh = new Mesh();
+    roadMesh.vertices = roadVertices;
+    roadMesh.triangles = roadTris;
+    roadMesh.uv = roadUVs;
+    roadMesh.RecalculateNormals();
+    roadMF.mesh = roadMesh;
+
+    Mesh stoneMesh = new Mesh();
+    stoneMesh.vertices = stoneVertices;
+    stoneMesh.triangles = stoneTris;
+    stoneMesh.uv = stoneUVs;
+    stoneMesh.RecalculateNormals();
+    stoneMF.mesh = stoneMesh;
+
+    int pointIndex = 0;
+    for (int i = 0; i < vertexCount; i++) { colliderPoints[pointIndex] = roadVertices[i]; pointIndex++; }
+    for (int i = vertexCount - 1; i >= 0; i--) { colliderPoints[pointIndex] = roadVertices[i + vertexCount]; pointIndex++; }
+    polyCollider.points = colliderPoints;
+
+    roadMR.material = biome.roadMaterial;
+    stoneMR.material = biome.stoneMaterial;
+
+    transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
+    transform.localScale = Vector3.one;
+}
 }

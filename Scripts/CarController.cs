@@ -79,6 +79,29 @@ public class CarController : MonoBehaviour
         }
     }
 
+    // --- In CarController.cs ---
+
+    // ... (place this method below ConsumeFuel() or wherever you like) ...
+
+    public void AddFuel(float amount)
+    {
+        CurrentFuel += amount;
+        
+        // Clamp the fuel so it doesn't go over the maximum
+        if (CurrentFuel > maxFuel)
+        {
+            CurrentFuel = maxFuel;
+        }
+
+        // If we were out of fuel, this makes the car drivable again
+        if (CurrentFuel > 0)
+        {
+            HasFuel = true;
+        }
+
+        Debug.Log("Added " + amount + " fuel. Current fuel: " + CurrentFuel);
+    }
+
     void FixedUpdate()
     {
 

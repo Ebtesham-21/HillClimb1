@@ -1049,6 +1049,9 @@ MonoBehaviour:
   coinPrefab: {fileID: 7893283960147863606, guid: 56601db302025d645b9f99be2bba34de, type: 3}
   coinSpawnChance: 0.25
   coinHeightOffset: 1.5
+  fuelCanPrefab: {fileID: 8888481669745867139, guid: 5461893d5be5e5f448224a0774e146e0, type: 3}
+  fuelCanSpawnChance: 0.05
+  fuelCanHeightOffset: 1
 --- !u!4 &1187820337
 Transform:
   m_ObjectHideFlags: 0
