@@ -9,6 +9,18 @@ public class CarController : MonoBehaviour
     public Transform wheelFR; // Still needed for the raycast
     public Collider2D wheelFLCollider;
     public Collider2D wheelFRCollider;
+    public ParticleSystem exhaustSmoke; 
+
+
+    
+ 
+    [Header("Effects")]
+    [Tooltip("How long after the car starts moving before smoke appears.")]
+    public float smokeStartDelay = 2f;
+
+    private float timeSpentMoving = 0f;
+    private bool isSmokeActive = false;
+  
 
     // --- NEW: References for the new physics model ---
     [Header("Physics References")]
@@ -58,11 +70,48 @@ public class CarController : MonoBehaviour
     {
         HorizontalInput = Input.GetAxis("Horizontal");
         ConsumeFuel();
-        Debug.Log("Input Value: " + HorizontalInput); // <-- ADD THIS LINE
+        HandleSmokeEffect();
         
         // VISUAL wheel rotation is now handled automatically by the wheel's Rigidbody2D.
         // The old HandleVisualWheelRotation() method can be deleted.
     }
+
+    private void HandleSmokeEffect()
+{
+    // Safety check first
+    if (exhaustSmoke == null) return;
+
+    // Condition 1: Is the player trying to move forward?
+    bool isAccelerating = HorizontalInput > 0.1f && IsGrounded() && HasFuel;
+
+    if (isAccelerating)
+    {
+        // If accelerating, increase the timer.
+        timeSpentMoving += Time.deltaTime;
+    }
+    else
+    {
+        // If not accelerating, reset the timer.
+        timeSpentMoving = 0f;
+    }
+
+    // Condition 2: Have we been accelerating long enough?
+    bool shouldSmokeBeOn = timeSpentMoving >= smokeStartDelay;
+
+    // --- NEW, SIMPLIFIED LOGIC ---
+    // Now we manage the state directly.
+
+    if (shouldSmokeBeOn && !exhaustSmoke.isPlaying)
+    {
+        // If the smoke SHOULD be on, but it's not currently playing, PLAY it.
+        exhaustSmoke.Play();
+    }
+    else if (!shouldSmokeBeOn && exhaustSmoke.isPlaying)
+    {
+        // If the smoke SHOULD be off, but it IS currently playing, STOP it.
+        exhaustSmoke.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+    }
+}
 
     void ConsumeFuel()
     {

@@ -12,11 +12,24 @@ public class MenuController : MonoBehaviour
     [Tooltip("The scale to apply to the car model when displayed in the menu.")]
     public Vector3 menuCarScale = new Vector3(2f, 2f, 1f); // Make it twice as big by default
 
+    // You probably have these UI scripts in your menu scene too.
+// If not, you can skip adding them.
+    private SpeedometerUI speedometer;
+    private FuelMeterUI fuelMeter;
+    private PedalControllerUI pedalController;
+
+
+
     private int currentCarIndex = 0;
     private GameObject currentCarInstance;
 
     void Start()
     {
+         // --- NEW: Find UI controllers ---
+    // We can do this since the menu UI is persistent
+    speedometer = FindObjectOfType<SpeedometerUI>();
+    fuelMeter = FindObjectOfType<FuelMeterUI>();
+    pedalController = FindObjectOfType<PedalControllerUI>();
         // Spawn the first car
         SwitchCar(0);
     }
@@ -48,6 +61,12 @@ public class MenuController : MonoBehaviour
     carNameText.text = allCars[currentCarIndex].carName;
     
     currentCarInstance.transform.localScale = menuCarScale;
+
+    // --- NEW: Assign the NEW, LIVE reference ---
+    CarController newCarController = currentCarInstance.GetComponent<CarController>();
+    if (speedometer != null) speedometer.carController = newCarController;
+    if (fuelMeter != null) fuelMeter.carController = newCarController;
+    if (pedalController != null) pedalController.carController = newCarController;
 
     // --- NEW: Disable all physics components on the spawned car ---
         // This stops it from falling or reacting to physics in the menu.
