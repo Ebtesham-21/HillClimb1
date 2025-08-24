@@ -76,40 +76,45 @@ public class CarController : MonoBehaviour
         // The old HandleVisualWheelRotation() method can be deleted.
     }
 
-    private void HandleSmokeEffect()
+   private void HandleSmokeEffect()
 {
     // Safety check first
     if (exhaustSmoke == null) return;
 
-    // Condition 1: Is the player trying to move forward?
+    // Determine if the player is trying to accelerate forward
     bool isAccelerating = HorizontalInput > 0.1f && IsGrounded() && HasFuel;
 
     if (isAccelerating)
     {
-        // If accelerating, increase the timer.
         timeSpentMoving += Time.deltaTime;
     }
     else
     {
-        // If not accelerating, reset the timer.
         timeSpentMoving = 0f;
     }
 
-    // Condition 2: Have we been accelerating long enough?
+    // Determine if the smoke should be on
     bool shouldSmokeBeOn = timeSpentMoving >= smokeStartDelay;
 
-    // --- NEW, SIMPLIFIED LOGIC ---
-    // Now we manage the state directly.
+    // --- THE NEW, BULLETPROOF LOGIC ---
+    // Get the emission module of the particle system
+    var emission = exhaustSmoke.emission;
 
-    if (shouldSmokeBeOn && !exhaustSmoke.isPlaying)
+    // Directly enable or disable emission based on our condition.
+    // This is the most reliable way to control a continuous effect.
+    if (shouldSmokeBeOn)
     {
-        // If the smoke SHOULD be on, but it's not currently playing, PLAY it.
-        exhaustSmoke.Play();
+        if (!emission.enabled)
+        {
+            emission.enabled = true;
+        }
     }
-    else if (!shouldSmokeBeOn && exhaustSmoke.isPlaying)
+    else
     {
-        // If the smoke SHOULD be off, but it IS currently playing, STOP it.
-        exhaustSmoke.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (emission.enabled)
+        {
+            emission.enabled = false;
+        }
     }
 }
 
