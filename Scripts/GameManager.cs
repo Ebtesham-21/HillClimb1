@@ -7,7 +7,8 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    public int selectedCarIndex = 0; // the choosen car
+    public int selectedCarIndex = 0;   // the choosen car
+    public int totalCoins = 0;
 
     public static string sceneToLoad;
 
@@ -18,12 +19,35 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            LoadCoins();
         }
         else
         {
             Destroy(gameObject);
         }
     }
+
+    public void AddCoins(int amount)
+    {
+        totalCoins += amount;
+        SaveCoins();
+        Debug.Log("Added " + amount + "coins.Total" + totalCoins);
+    }
+
+
+    public void SaveCoins()
+    {
+        PlayerPrefs.SetInt("TotalCoins", totalCoins);
+        PlayerPrefs.Save();
+    }
+
+    public void LoadCoins()
+    {
+        totalCoins = PlayerPrefs.GetInt("TotalCoins", 0);
+    }
+
+
+   
 
 
     public static void LoadScene(string scenceName)

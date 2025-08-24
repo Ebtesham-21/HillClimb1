@@ -12,6 +12,9 @@ public class ProceduralGroundChunk : MonoBehaviour
     [HideInInspector] public float seed;
 
     [HideInInspector] public float worldVerticalOffset; // <-- ADD THIS LINE
+    [HideInInspector] public GameObject coinPrefab;
+    [HideInInspector] public float coinSpawnChance;
+    [HideInInspector] public float coinHeightOffset;
 
 
 
@@ -95,6 +98,16 @@ public class ProceduralGroundChunk : MonoBehaviour
             float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
             float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
             float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
+            // --- NEW: Coin Spawning Logic ---
+            // We check every few segments to avoid spawning coins too close together.
+            if (i > 0 && i < segments && i % 5 == 0) // e.g., check every 5th segment
+            {
+                if (Random.value < coinSpawnChance)
+                {
+                    Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
+                    Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
+                }
+            }
 
             // Vertex calculations...
             Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);

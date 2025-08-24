@@ -35,6 +35,11 @@ public float seed = 1234f;
     private float nextSpawnX = 0f;
     private float ChunkWorldLength => segmentsPerChunk * step;
 
+    [Header("Object Spawning")] // New header
+    public GameObject coinPrefab;
+    [Range(0f, 1f)] public float coinSpawnChance = 0.25f; // 25% chance
+    public float coinHeightOffset = 1.5f; // How high above the ground coins spawn
+
     void Start()
 {
     if (!player || !chunkPrefab)
@@ -121,9 +126,16 @@ void SwitchToNewBiome()
 
     // Assign the current biome profile. This contains materials and noise settings.
     chunk.biome = currentBiome;
+    
+     // --- NEW: Pass coin settings to the chunk ---
+        chunk.coinPrefab = coinPrefab;
+        chunk.coinSpawnChance = coinSpawnChance;
+        chunk.coinHeightOffset = coinHeightOffset;
+
+        StartCoroutine(chunk.BuildRoutine());
 
     // Assign settings from the streamer
-    chunk.segments = segmentsPerChunk;
+        chunk.segments = segmentsPerChunk;
     chunk.step = step;
     chunk.worldVerticalOffset = worldVerticalOffset; // <-- ADD THIS LINE
     chunk.bottomY = bottomY;
