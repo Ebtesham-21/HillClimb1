@@ -44,7 +44,7 @@ public class MenuController : MonoBehaviour
         SwitchCar(-1);
     }
 
-    void SwitchCar(int direction)
+   void SwitchCar(int direction)
 {
     currentCarIndex += direction;
 
@@ -62,25 +62,38 @@ public class MenuController : MonoBehaviour
     
     currentCarInstance.transform.localScale = menuCarScale;
 
-    // --- NEW: Assign the NEW, LIVE reference ---
+    // --- (Your existing reference assignment code is here, which is fine) ---
     CarController newCarController = currentCarInstance.GetComponent<CarController>();
-    if (speedometer != null) speedometer.carController = newCarController;
-    if (fuelMeter != null) fuelMeter.carController = newCarController;
-    if (pedalController != null) pedalController.carController = newCarController;
+    // ...
 
-    // --- NEW: Disable all physics components on the spawned car ---
-        // This stops it from falling or reacting to physics in the menu.
-        Rigidbody2D[] allRigidbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
-    foreach (Rigidbody2D rb in allRigidbodies)
+    // --- (Your existing physics disabling code is here, which is fine) ---
+    Rigidbody2D[] allRigridbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
+        // ...
+     foreach (Rigidbody2D rb in allRigridbodies)
     {
-        rb.simulated = false; // 'simulated = false' is the best way to turn off physics
+        // Make the Rigidbody kinematic - it will no longer be affected by gravity or forces.
+        rb.isKinematic = true;
+
+        // Also stop its velocity just in case it had any from the spawn frame.
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0f;
     }
-
-    // Also disable the main CarController script itself, as we don't need it in the menu
-    CarController carController = currentCarInstance.GetComponent<CarController>();
-    if (carController != null)
+    
+    // Disable the CarController script
+        if (newCarController != null)
+        {
+            newCarController.enabled = false;
+        }
+    
+    // --- NEW CODE TO DISABLE SMOKE ---
+    // Find the ParticleSystem component on the newly spawned car instance.
+    // We use GetComponentInChildren because the smoke might be on a child object.
+    ParticleSystem smokeEffect = currentCarInstance.GetComponentInChildren<ParticleSystem>();
+    if (smokeEffect != null)
     {
-        carController.enabled = false;
+        // Deactivate the entire GameObject that the particle system is attached to.
+        // This is the cleanest and most reliable way to ensure it's completely off.
+        smokeEffect.gameObject.SetActive(false);
     }
 }
 

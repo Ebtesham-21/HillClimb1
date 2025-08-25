@@ -33,7 +33,11 @@ public class Coin : MonoBehaviour
 
         // Optional: Add sound effect here
         // AudioManager.Instance.PlayCoinSound();
-
+        // --- NEW: Also tell the session manager for the end-of-run stats ---
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.AddRunCoins(value);
+        }
         // Start the visual "pop up and fade" animation
         StartCoroutine(AnimateAndDestroy());
     }

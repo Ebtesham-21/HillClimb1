@@ -153,6 +153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   allCars:
   - {fileID: 11400000, guid: 86c229e89ae48fa49a983deec02e1bc1, type: 2}
+  - {fileID: 11400000, guid: b6ad7f6e5e51bf74d8463bcdb4b04499, type: 2}
   carSpawnPoint: {fileID: 1589889918}
   carNameText: {fileID: 935858556}
   menuCarScale: {x: 2, y: 2, z: 1}

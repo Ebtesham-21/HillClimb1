@@ -48,6 +48,17 @@ public class GameManager : MonoBehaviour
 
 
    
+   public void GoToMenu()
+{
+    Time.timeScale = 1f; // Unpause the game before changing scene
+    LoadScene("MenuScene");
+}
+
+public void RetryGame()
+{
+    Time.timeScale = 1f;
+    LoadScene("GameScene");
+}
 
 
     public static void LoadScene(string scenceName)

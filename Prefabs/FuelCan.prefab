@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5716304343615378699}
   - component: {fileID: 2426931747457947977}
   - component: {fileID: 3550329770543876851}
+  - component: {fileID: 2929246061004526940}
   m_Layer: 0
   m_Name: FuelCan
   m_TagString: Untagged
@@ -144,3 +145,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fuelAmount: 25
+--- !u!210 &2929246061004526940
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8888481669745867139}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_SortAtRoot: 0

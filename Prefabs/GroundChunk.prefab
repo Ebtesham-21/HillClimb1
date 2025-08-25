@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7877294792696310658}
   - component: {fileID: 6316621197958793808}
   - component: {fileID: 6609352067710881280}
+  - component: {fileID: 2781452910607224152}
   m_Layer: 0
   m_Name: GroundChunk
   m_TagString: Untagged
@@ -31,8 +32,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6057280358869947678}
   - {fileID: 4081814724727780880}
+  - {fileID: 6057280358869947678}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6316621197958793808
@@ -51,6 +52,13 @@ MonoBehaviour:
   step: 1
   startXWorld: 0
   seed: 1234
+  worldVerticalOffset: 0
+  coinPrefab: {fileID: 0}
+  coinSpawnChance: 0
+  coinHeightOffset: 0
+  fuelCanPrefab: {fileID: 0}
+  fuelCanSpawnChance: 0
+  fuelCanHeightOffset: 0
   biome: {fileID: 0}
   bottomY: -20
   uvTilesX: 4
@@ -101,12 +109,24 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 1}
+    - - {x: 0.019124508, y: 0.3115164}
       - {x: -0.95105654, y: 0.30901697}
       - {x: -0.5877852, y: -0.80901706}
       - {x: 0.58778536, y: -0.80901694}
       - {x: 0.9510565, y: 0.30901712}
   m_UseDelaunayMesh: 0
+--- !u!210 &2781452910607224152
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3600310808872528989}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 10
+  m_SortAtRoot: 0
 --- !u!1 &6249815851567548226
 GameObject:
   m_ObjectHideFlags: 0
@@ -134,7 +154,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6249815851567548226}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0.503, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -199,7 +219,7 @@ EdgeCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6249815851567548226}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:

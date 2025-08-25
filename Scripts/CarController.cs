@@ -159,7 +159,7 @@ public class CarController : MonoBehaviour
     void FixedUpdate()
     {
 
-        Debug.Log("IsGrounded check: " + IsGrounded() + " | HasFuel check: " + HasFuel); // <-- ADD THIS LINE
+        
         // We still calculate this for the speedometer UI.
         CurrentForwardSpeed = Vector2.Dot(rb.velocity, transform.right);
 
@@ -205,7 +205,7 @@ public class CarController : MonoBehaviour
             Mathf.LerpAngle(carBody.localEulerAngles.z, 0, Time.fixedDeltaTime * tiltSmoothSpeed));
     }
 
-    bool IsGrounded()
+    public bool IsGrounded()
     {
         // This check is still valid and works perfectly.
         return wheelFLCollider.IsTouchingLayers(groundLayer) || wheelFRCollider.IsTouchingLayers(groundLayer);
