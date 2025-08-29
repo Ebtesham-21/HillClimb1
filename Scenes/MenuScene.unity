@@ -154,6 +154,16 @@ MonoBehaviour:
   allCars:
   - {fileID: 11400000, guid: 86c229e89ae48fa49a983deec02e1bc1, type: 2}
   - {fileID: 11400000, guid: b6ad7f6e5e51bf74d8463bcdb4b04499, type: 2}
+  - {fileID: 11400000, guid: dde9efa0da87244449a84595f9330b67, type: 2}
+  - {fileID: 11400000, guid: 5c01e3bfa6ae09243bceaa15325d5735, type: 2}
+  - {fileID: 11400000, guid: 4aad203cb460cac46bdd0fdee15acdaf, type: 2}
+  - {fileID: 11400000, guid: 34b88a03d0d21124aae57a259ac40805, type: 2}
+  - {fileID: 11400000, guid: 91a5e9c7da14f1e42ad7a5f9d3c9f7b5, type: 2}
+  - {fileID: 11400000, guid: 96e06aa04adce1b4ca012dbd7798400a, type: 2}
+  - {fileID: 11400000, guid: 4f8e2079876e69b42a80622bbb176ffb, type: 2}
+  - {fileID: 11400000, guid: 452ce04a79be0b4439ab37a8eebab06d, type: 2}
+  - {fileID: 11400000, guid: dc08340e7ad103d49bfedcb6ed5938b7, type: 2}
+  - {fileID: 11400000, guid: 3cdac2403adc78545a0c9930f3c54e59, type: 2}
   carSpawnPoint: {fileID: 1589889918}
   carNameText: {fileID: 935858556}
   menuCarScale: {x: 2, y: 2, z: 1}
@@ -590,7 +600,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 4, y: -181}
+  m_AnchoredPosition: {x: 4, y: -209}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &935858556
@@ -676,7 +686,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: -321.87372, y: 0, z: -314.27618, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0

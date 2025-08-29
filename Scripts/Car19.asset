@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9be5e77869aa81a46a6512732723ef5e, type: 3}
+  m_Name: Car19
+  m_EditorClassIdentifier: 
+  carPrefab: {fileID: 4505822847091911282, guid: b2b7c3dfc6579f748a7930ff7f97df93, type: 3}
+  carName: Classic 2
