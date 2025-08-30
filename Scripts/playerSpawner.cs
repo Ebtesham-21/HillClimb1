@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PlayerSpawner : MonoBehaviour
 {
-    public CarData[] allCars;
+    public CarDatabase carDatabase;
     public Transform spawnPoint;
 
     void Awake()
@@ -14,7 +14,7 @@ public class PlayerSpawner : MonoBehaviour
         }
         
         // Instantiate the correct car prefab
-        GameObject carInstance = Instantiate(allCars[selectedIndex].carPrefab, spawnPoint.position, spawnPoint.rotation);
+        GameObject carInstance = Instantiate(carDatabase.allCars[selectedIndex].carPrefab, spawnPoint.position, spawnPoint.rotation);
         
         // Get the CarController component from the car we just spawned
         CarController spawnedCarController = carInstance.GetComponent<CarController>();

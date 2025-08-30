@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 7883398039356865908, guid: 1c59fde524559f9488a6a29b87a60c14, type: 3}
   carName: Sports 2
+  price: 200000
+  isUnlockedByDefault: 0

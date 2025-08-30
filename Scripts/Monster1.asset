@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: 5333442d0039b7046ae0f5624d88332f, type: 3}
   carName: Monster 1
+  price: 2000000
+  isUnlockedByDefault: 0

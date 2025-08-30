@@ -95,7 +95,7 @@ CircleCollider2D:
   m_GameObject: {fileID: 156423003691749513}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: ad4fb8aa2db9e4947b286d387f565dd4, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -118,7 +118,7 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.00000047683716, y: 0}
   serializedVersion: 2
   m_Radius: 0.405
 --- !u!50 &6128184283066876900
@@ -5415,7 +5415,7 @@ CircleCollider2D:
   m_GameObject: {fileID: 7590987860527865996}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: ad4fb8aa2db9e4947b286d387f565dd4, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -5440,7 +5440,7 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 0.405
+  m_Radius: 0.40500006
 --- !u!50 &6321045624883869723
 Rigidbody2D:
   serializedVersion: 4

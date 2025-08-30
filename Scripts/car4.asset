@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: 696668555babddf4fae0f20e07c2c95b, type: 3}
   carName: HatchBack2
+  price: 35000
+  isUnlockedByDefault: 0

@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: 94c7d8e7ac3060343b3bf58c5d0dd88d, type: 3}
   carName: Coupe
+  price: 20000
+  isUnlockedByDefault: 0

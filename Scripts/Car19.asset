@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: b2b7c3dfc6579f748a7930ff7f97df93, type: 3}
   carName: Classic 2
+  price: 250000
+  isUnlockedByDefault: 0

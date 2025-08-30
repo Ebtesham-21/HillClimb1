@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: f1d9e8bbd59fdf748b27845df64d2ab4, type: 3}
   carName: Bus 1
+  price: 50000
+  isUnlockedByDefault: 0
