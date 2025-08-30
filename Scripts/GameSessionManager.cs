@@ -47,11 +47,23 @@ public class GameSessionManager : MonoBehaviour
     {
         // Find the car in the scene once the spawner has created it
         car = FindObjectOfType<CarController>();
+        if (car == null) 
+        {
+            Debug.LogError("GameSessionManager could not find the CarController in the scene!");
+            this.enabled = false; // Disable this script to prevent errors
+            return;
+        }
+
         startPosition = car.transform.position;
         
-        gameOverPanel.SetActive(false); // Make sure the game over panel is hidden
-        Time.timeScale = 1f; // Ensure the game is not paused
+        gameOverPanel.SetActive(false); 
+        Time.timeScale = 1f;
 
+        // --- FIX 1: Initialize values to a clean state ---
+        nextCheckpointDistance = 0f; // Start distance count from 0
+        timeLeft = 0f;               // Start timer from 0
+        
+        // Now generate the FIRST checkpoint, which will set the initial distance and time
         GenerateNewCheckpoint();
     }
 
@@ -84,12 +96,17 @@ public class GameSessionManager : MonoBehaviour
 {
     // Use a list to store all the reasons the game might be over.
     List<string> gameOverReasons = new List<string>();
+    
+    if (car == null) {
+            TriggerGameOver("CAR NOT FOUND!");
+            return;
+        }
 
     // Condition 1: Out of fuel
-    if (!car.HasFuel && car.CurrentForwardSpeed < 0.1f)
-    {
-        gameOverReasons.Add("Out of Fuel!");
-    }
+        if (!car.HasFuel && car.CurrentForwardSpeed < 0.1f)
+        {
+            gameOverReasons.Add("Out of Fuel!");
+        }
 
     // Condition 2: Flipped over
     if (Vector3.Angle(Vector3.up, car.transform.up) > 150f && car.IsGrounded())
@@ -129,7 +146,14 @@ public class GameSessionManager : MonoBehaviour
     void GenerateNewCheckpoint()
     {
         float distanceToNext = Random.Range(checkpointDistanceRange.x, checkpointDistanceRange.y);
+        // This is correct, we add to the previous checkpoint's location
         nextCheckpointDistance += distanceToNext;
+        
+        // --- FIX 2: We don't just add time, we reset and add ---
+        // For the first checkpoint, timeLeft is 0, so it gets the full duration.
+        // For subsequent checkpoints, this REFILLS the timer and adds the new bonus time.
+        // A better approach is to just add the bonus time. Let's stick with that.
+        // The previous logic was correct, the initialization in Start() was the problem.
         
         timeLeft += Random.Range(checkpointTimeRewardRange.x, checkpointTimeRewardRange.y);
     }
