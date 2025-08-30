@@ -20,6 +20,12 @@ public class MenuController : MonoBehaviour
 
 
 
+    [Header("Car Preview Settings")]
+    [Tooltip("The maximum bounding box size (W,H,D) that cars will be scaled to fit inside the menu frame.")]
+    public Vector3 targetFrameSize = new Vector3(5f, 2f, 2f);
+
+
+
     private int currentCarIndex = 0;
     private GameObject currentCarInstance;
 
@@ -44,7 +50,7 @@ public class MenuController : MonoBehaviour
         SwitchCar(-1);
     }
 
-   void SwitchCar(int direction)
+  void SwitchCar(int direction)
 {
     currentCarIndex += direction;
 
@@ -56,46 +62,69 @@ public class MenuController : MonoBehaviour
         Destroy(currentCarInstance);
     }
 
-    // Spawn the new car model
+    // Spawn new car
     currentCarInstance = Instantiate(allCars[currentCarIndex].carPrefab, carSpawnPoint.position, carSpawnPoint.rotation);
     carNameText.text = allCars[currentCarIndex].carName;
-    
-    currentCarInstance.transform.localScale = menuCarScale;
 
-    // --- (Your existing reference assignment code is here, which is fine) ---
-    CarController newCarController = currentCarInstance.GetComponent<CarController>();
-    // ...
+    // -------------------
+    // AUTO SCALE TO FRAME
+    // -------------------
+    // Desired bounding box size (frame size)
+    Vector3 targetFrameSize = new Vector3(5f, 2f, 2f); 
+    // ^ Adjust this to match your UI "frame" size (X=width, Y=height, Z=depth)
 
-    // --- (Your existing physics disabling code is here, which is fine) ---
-    Rigidbody2D[] allRigridbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
-        // ...
-     foreach (Rigidbody2D rb in allRigridbodies)
+    // Get combined bounds of all renderers in the car prefab
+    SpriteRenderer[] renderers = currentCarInstance.GetComponentsInChildren<SpriteRenderer>();
+    if (renderers.Length > 0)
     {
-        // Make the Rigidbody kinematic - it will no longer be affected by gravity or forces.
-        rb.isKinematic = true;
+        Bounds combinedBounds = renderers[0].bounds;
+        foreach (SpriteRenderer r in renderers)
+        {
+            combinedBounds.Encapsulate(r.bounds);
+        }
 
-        // Also stop its velocity just in case it had any from the spawn frame.
+        // Car size
+        Vector3 carSize = combinedBounds.size;
+
+        // Scale factor = min of (target size / car size) for each axis
+        float scaleX = targetFrameSize.x / carSize.x;
+        float scaleY = targetFrameSize.y / carSize.y;
+        float scaleZ = targetFrameSize.z / carSize.z;
+
+        float finalScale = Mathf.Min(scaleX, scaleY, scaleZ);
+
+        currentCarInstance.transform.localScale = Vector3.one * finalScale;
+    }
+    else
+    {
+        // fallback: use default scale
+        currentCarInstance.transform.localScale = menuCarScale;
+    }
+
+    // Disable physics
+    Rigidbody2D[] allRigridbodies = currentCarInstance.GetComponentsInChildren<Rigidbody2D>();
+    foreach (Rigidbody2D rb in allRigridbodies)
+    {
+        rb.isKinematic = true;
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
     }
-    
-    // Disable the CarController script
-        if (newCarController != null)
-        {
-            newCarController.enabled = false;
-        }
-    
-    // --- NEW CODE TO DISABLE SMOKE ---
-    // Find the ParticleSystem component on the newly spawned car instance.
-    // We use GetComponentInChildren because the smoke might be on a child object.
+
+    // Disable controller
+    CarController newCarController = currentCarInstance.GetComponent<CarController>();
+    if (newCarController != null)
+    {
+        newCarController.enabled = false;
+    }
+
+    // Disable smoke
     ParticleSystem smokeEffect = currentCarInstance.GetComponentInChildren<ParticleSystem>();
     if (smokeEffect != null)
     {
-        // Deactivate the entire GameObject that the particle system is attached to.
-        // This is the cleanest and most reliable way to ensure it's completely off.
         smokeEffect.gameObject.SetActive(false);
     }
 }
+
 
     public void StartGame()
     {
