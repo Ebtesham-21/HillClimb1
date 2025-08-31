@@ -91,12 +91,14 @@ public class MenuController : MonoBehaviour
         // --- AUTO-SCALING LOGIC (RESTORED) ---
         AutoScaleToShowcase(currentCarInstance);
 
+        UpdateAllUI();
+
         // --- Disable All Unnecessary Components for the Menu ---
         DisableCarComponents(currentCarInstance);
 
         // Update the button to show "SELECT" or "BUY (price)"
-        UpdateSelectButton();
-        UpdateAllUI();
+       
+        
     }
 
      // --- NEW: A master function to update all UI elements ---
@@ -213,10 +215,12 @@ public class MenuController : MonoBehaviour
     // --- NEW: Public methods to be called by the upgrade buttons ---
     public void OnUpgradeFuelPressed()
     {
-        if(GameManager.Instance.TryPurchaseUpgrade(currentCarIndex, "Fuel"))
+        Debug.Log("OnUpgradeFuelPressed() method was CALLED!");
+        if (GameManager.Instance.TryPurchaseUpgrade(currentCarIndex, "Fuel"))
         {
             UpdateStatsUI(); // Refresh the UI to show new stats and cost
-        } else { StartCoroutine(ShowNotEnoughCoinsMessage()); }
+        }
+        else { StartCoroutine(ShowNotEnoughCoinsMessage()); }
     }
 
     public void OnUpgradeSpeedPressed()

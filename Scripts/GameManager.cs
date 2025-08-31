@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System; 
 
 public class GameManager : MonoBehaviour
 {
@@ -123,6 +124,12 @@ public int GetUpgradeLevel(int carIndex, string statName)
         int currentLevel = GetUpgradeLevel(carIndex, statName);
         int cost = GetUpgradeCost(currentLevel);
 
+
+         // --- ADD THIS DEBUG LINE ---
+    Debug.Log($"Attempting to upgrade '{statName}' for car index {carIndex}. " +
+              $"Current Level: {currentLevel}, " +
+              $"Upgrade Cost: {cost}, " +
+              $"Player Coins: {totalCoins}");
         if (totalCoins >= cost)
         {
             totalCoins -= cost;
@@ -145,9 +152,9 @@ public int GetUpgradeLevel(int carIndex, string statName)
     }
 
 
-    public static void LoadScene(string scenceName)
+    public static void LoadScene(string sceneName)
     {
-        sceneToLoad = scenceName;
+        sceneToLoad = sceneName;
         SceneManager.LoadScene("LoaderScene");
     }
 }
