@@ -11,6 +11,9 @@ public class CarController : MonoBehaviour
     public Collider2D wheelFRCollider;
     public ParticleSystem exhaustSmoke; 
 
+     [HideInInspector] public CarData carData;
+    [HideInInspector] public int carIndex;
+
 
     
  
@@ -59,6 +62,19 @@ public class CarController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>(); // Gets the Rigidbody2D of the car body
+        
+        
+        if (carData != null)
+        {
+            int fuelLevel = GameManager.Instance.GetUpgradeLevel(carIndex, "Fuel");
+            maxFuel = carData.baseMaxFuel + (fuelLevel * 50f);
+
+            int speedLevel = GameManager.Instance.GetUpgradeLevel(carIndex, "Speed");
+            motorSpeed = carData.baseMotorSpeed + (speedLevel * 100f);
+
+            int torqueLevel = GameManager.Instance.GetUpgradeLevel(carIndex, "Torque");
+            maxMotorTorque = carData.baseMaxMotorTorque + (torqueLevel * 200f);
+        } 
         CurrentFuel = maxFuel;
         HasFuel = true;
 

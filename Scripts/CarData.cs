@@ -10,4 +10,9 @@ public class CarData : ScriptableObject
 
     [Tooltip("Is this car unlocked by default? (Should only be true for the very first car)")]
     public bool isUnlockedByDefault = false; // <-- NEW
+
+    [Header("Base Stats")]
+    public float baseMaxFuel = 100f;
+    public float baseMotorSpeed = 2500f;
+    public float baseMaxMotorTorque = 1000f;
 }

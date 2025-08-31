@@ -5227,10 +5227,10 @@ MonoBehaviour:
   smokeStartDelay: 2
   backWheelJoint: {fileID: 4245286462638976724}
   frontWheelJoint: {fileID: 4393253986086987027}
-  maxFuel: 100
+  maxFuel: 120
   fuelConsumptionRate: 2.5
-  motorSpeed: 1000
-  maxMotorTorque: 2000
+  motorSpeed: 1100
+  maxMotorTorque: 2200
   airControlTorque: 300
   bodyTiltOnGround: 1
   tiltSmoothSpeed: 5

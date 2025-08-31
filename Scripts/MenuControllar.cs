@@ -29,6 +29,19 @@ public class MenuController : MonoBehaviour
     [Tooltip("The scale to apply to the car model when it's displayed in the menu.")]
      public Vector3 targetFrameSize = new Vector3(5f, 3f, 1f);
 
+
+    [Header("Upgrade UI Elements")]
+    public GameObject statsPanel; // The parent object for all stats UI
+    public TextMeshProUGUI fuelStatText;
+    public Button upgradeFuelButton;
+    public TextMeshProUGUI upgradeFuelCostText;
+    public TextMeshProUGUI speedStatText;
+    public Button upgradeSpeedButton;
+    public TextMeshProUGUI upgradeSpeedCostText;
+    public TextMeshProUGUI torqueStatText;
+    public Button upgradeTorqueButton;
+    public TextMeshProUGUI upgradeTorqueCostText;
+
     private int currentCarIndex = 0;
     private GameObject currentCarInstance;
 
@@ -83,6 +96,14 @@ public class MenuController : MonoBehaviour
 
         // Update the button to show "SELECT" or "BUY (price)"
         UpdateSelectButton();
+        UpdateAllUI();
+    }
+
+     // --- NEW: A master function to update all UI elements ---
+    void UpdateAllUI()
+    {
+        UpdateSelectButton();
+        UpdateStatsUI();
     }
     
 
@@ -158,6 +179,60 @@ public class MenuController : MonoBehaviour
             lockIcon.SetActive(true);
             selectButtonText.text = $"BUY ({currentCarData.price})";
         }
+    }
+
+    // --- NEW: Logic to update the stats and upgrade buttons ---
+    void UpdateStatsUI()
+    {
+        CarData currentCarData = carDatabase.allCars[currentCarIndex];
+        bool isUnlocked = GameManager.Instance.IsCarUnlocked(currentCarIndex) || currentCarData.isUnlockedByDefault;
+
+        // Only show the stats panel if the car is unlocked
+        statsPanel.SetActive(isUnlocked);
+        if (!isUnlocked) return;
+
+        // -- Fuel --
+        int fuelLevel = GameManager.Instance.GetUpgradeLevel(currentCarIndex, "Fuel");
+        float maxFuel = currentCarData.baseMaxFuel + (fuelLevel * 50f);
+        fuelStatText.text = $"Max Fuel: {maxFuel}";
+        upgradeFuelCostText.text = $"{GameManager.Instance.GetUpgradeCost(fuelLevel)}";
+        
+        // -- Speed --
+        int speedLevel = GameManager.Instance.GetUpgradeLevel(currentCarIndex, "Speed");
+        float motorSpeed = currentCarData.baseMotorSpeed + (speedLevel * 100f);
+        speedStatText.text = $"Acceleration: {motorSpeed}";
+        upgradeSpeedCostText.text = $"{GameManager.Instance.GetUpgradeCost(speedLevel)}";
+        
+        // -- Torque --
+        int torqueLevel = GameManager.Instance.GetUpgradeLevel(currentCarIndex, "Torque");
+        float maxTorque = currentCarData.baseMaxMotorTorque + (torqueLevel * 200f);
+        torqueStatText.text = $"Power: {maxTorque}";
+        upgradeTorqueCostText.text = $"{GameManager.Instance.GetUpgradeCost(torqueLevel)}";
+    }
+
+    // --- NEW: Public methods to be called by the upgrade buttons ---
+    public void OnUpgradeFuelPressed()
+    {
+        if(GameManager.Instance.TryPurchaseUpgrade(currentCarIndex, "Fuel"))
+        {
+            UpdateStatsUI(); // Refresh the UI to show new stats and cost
+        } else { StartCoroutine(ShowNotEnoughCoinsMessage()); }
+    }
+
+    public void OnUpgradeSpeedPressed()
+    {
+        if(GameManager.Instance.TryPurchaseUpgrade(currentCarIndex, "Speed"))
+        {
+            UpdateStatsUI();
+        } else { StartCoroutine(ShowNotEnoughCoinsMessage()); }
+    }
+    
+    public void OnUpgradeTorquePressed()
+    {
+        if(GameManager.Instance.TryPurchaseUpgrade(currentCarIndex, "Torque"))
+        {
+            UpdateStatsUI();
+        } else { StartCoroutine(ShowNotEnoughCoinsMessage()); }
     }
 
     public void OnSelectButtonPressed()
