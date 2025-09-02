@@ -17,8 +17,8 @@ public class GroundStreamer : MonoBehaviour
     private BiomeProfile currentBiome;
     private float nextBiomeChangeDistance;
 
-[Header("Global Settings")]
-public float seed = 1234f;
+    [Header("Global Settings")]
+    public float seed = 1234f;
 
     [Header("Chunk Settings")]
     [Tooltip("The vertical offset for the entire generated world.")]
@@ -46,37 +46,63 @@ public float seed = 1234f;
     [Range(0f, 1f)] public float fuelCanSpawnChance = 0.05f; // 5% chance
     public float fuelCanHeightOffset = 1.0f; // Place it a bit lower than coins
 
+
+
     void Start()
-{
-    if (!player || !chunkPrefab)
+        {
+            Initialize();
+        }
+
+
+
+
+        public void ResetAndInitialize()
     {
-        Debug.LogError("Assign player and chunk prefab on GroundStreamer");
-        enabled = false;
-        return;
-    }
+        // 1. Clean up any old chunks that might still exist from the previous run.
+        foreach (var chunk in active)
+        {
+            if (chunk != null) 
+            {
+                Destroy(chunk.gameObject);
+            }
+        }
+        // 2. Clear the list of chunk references.
+        active.Clear();
 
-    if (availableBiomes.Length == 0)
+        // 3. Re-run the original startup logic to generate a fresh new world.
+        Initialize();
+    }
+    public void Initialize()
     {
-        Debug.LogError("No biomes assigned in the 'availableBiomes' array on GroundStreamer!");
-        enabled = false;
-        return;
+        if (!player || !chunkPrefab)
+        {
+            Debug.LogError("Assign player and chunk prefab on GroundStreamer");
+            enabled = false;
+            return;
+        }
+
+        if (availableBiomes.Length == 0)
+        {
+            Debug.LogError("No biomes assigned in the 'availableBiomes' array on GroundStreamer!");
+            enabled = false;
+            return;
+        }
+
+        // --- Biome Initialization ---
+        // Start with a random biome
+        currentBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
+        // Set the first distance for a biome change
+        nextBiomeChangeDistance = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
+        Debug.Log($"Starting with biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
+
+
+        // --- Original Spawning Logic ---
+        float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
+        nextSpawnX = startX;
+
+        int total = chunksBehind + chunksAhead + 1;
+        for (int i = 0; i < total; i++) SpawnNextChunk();
     }
-
-    // --- Biome Initialization ---
-    // Start with a random biome
-    currentBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
-    // Set the first distance for a biome change
-    nextBiomeChangeDistance = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
-    Debug.Log($"Starting with biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
-
-
-    // --- Original Spawning Logic ---
-    float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
-    nextSpawnX = startX;
-
-    int total = chunksBehind + chunksAhead + 1;
-    for (int i = 0; i < total; i++) SpawnNextChunk();
-}
 
     void Update()
     {
@@ -98,42 +124,42 @@ public float seed = 1234f;
 
 
     void CheckForBiomeChange()
-{
-    // Check if the next chunk to be spawned is past the change threshold
-    if (nextSpawnX >= nextBiomeChangeDistance)
     {
-        SwitchToNewBiome();
-        
-        // Calculate the next change point from the current position
-        float nextChange = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
-        nextBiomeChangeDistance += nextChange;
-        
-        Debug.Log($"Switching to biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
+        // Check if the next chunk to be spawned is past the change threshold
+        if (nextSpawnX >= nextBiomeChangeDistance)
+        {
+            SwitchToNewBiome();
+
+            // Calculate the next change point from the current position
+            float nextChange = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
+            nextBiomeChangeDistance += nextChange;
+
+            Debug.Log($"Switching to biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
+        }
     }
-}
 
-void SwitchToNewBiome()
-{
-    // This loop ensures we don't randomly pick the same biome again
-    BiomeProfile newBiome;
-    do
+    void SwitchToNewBiome()
     {
-        newBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
-    } while (newBiome == currentBiome && availableBiomes.Length > 1); // Avoid infinite loop if only 1 biome exists
+        // This loop ensures we don't randomly pick the same biome again
+        BiomeProfile newBiome;
+        do
+        {
+            newBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
+        } while (newBiome == currentBiome && availableBiomes.Length > 1); // Avoid infinite loop if only 1 biome exists
 
-    currentBiome = newBiome;
-}
+        currentBiome = newBiome;
+    }
 
     void SpawnNextChunk()
-{
-    var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
+    {
+        var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
 
-    // --- Assign all properties to the new chunk ---
+        // --- Assign all properties to the new chunk ---
 
-    // Assign the current biome profile. This contains materials and noise settings.
-    chunk.biome = currentBiome;
-    
-     // --- NEW: Pass coin settings to the chunk ---
+        // Assign the current biome profile. This contains materials and noise settings.
+        chunk.biome = currentBiome;
+
+        // --- NEW: Pass coin settings to the chunk ---
         chunk.coinPrefab = coinPrefab;
         chunk.coinSpawnChance = coinSpawnChance;
         chunk.coinHeightOffset = coinHeightOffset;
@@ -146,21 +172,24 @@ void SwitchToNewBiome()
 
         StartCoroutine(chunk.BuildRoutine());
 
-    // Assign settings from the streamer
+        // Assign settings from the streamer
         chunk.segments = segmentsPerChunk;
-    chunk.step = step;
-    chunk.worldVerticalOffset = worldVerticalOffset; // <-- ADD THIS LINE
-    chunk.bottomY = bottomY;
-    chunk.seed = seed;
-    chunk.startXWorld = nextSpawnX;
-    chunk.uvTilesX = uvTilesX;
+        chunk.step = step;
+        chunk.worldVerticalOffset = worldVerticalOffset; // <-- ADD THIS LINE
+        chunk.bottomY = bottomY;
+        chunk.seed = seed;
+        chunk.startXWorld = nextSpawnX;
+        chunk.uvTilesX = uvTilesX;
 
-    // Now build the chunk using the assigned properties
-    StartCoroutine(chunk.BuildRoutine());
+        // Now build the chunk using the assigned properties
+        StartCoroutine(chunk.BuildRoutine());
 
-    active.AddLast(chunk);
-    nextSpawnX += ChunkWorldLength;
-}
+        active.AddLast(chunk);
+        nextSpawnX += ChunkWorldLength;
+    }
+
+// --- In GroundStreamer.cs ---
+
 
 
 }

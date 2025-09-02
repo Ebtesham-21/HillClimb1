@@ -30,6 +30,8 @@ public class GameSessionManager : MonoBehaviour
     public Vector2 checkpointTimeRewardRange = new Vector2(30f, 150f);
     private float nextCheckpointDistance;
 
+    private GroundStreamer groundStreamer;
+
     [Header("Timer")]
     public float timeLeft;
 
@@ -49,7 +51,10 @@ public class GameSessionManager : MonoBehaviour
     {
         Instance = this;
         crazyGamesManager = FindObjectOfType<CrazyGamesManager>(); 
+        groundStreamer = FindObjectOfType<GroundStreamer>(); 
     }
+
+    
 
     void Start()
     {
@@ -77,10 +82,12 @@ public class GameSessionManager : MonoBehaviour
         nextCheckpointDistance = 0f;
         coinsCollectedThisRun = 0;
         totalDistanceDriven = 0f;
+        
+        
 
 
         // --- NEW ---
-        if(crazyGamesManager != null)
+        if (crazyGamesManager != null)
         {
             crazyGamesManager.StartGameplay();
         }

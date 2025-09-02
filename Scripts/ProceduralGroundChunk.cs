@@ -67,6 +67,8 @@ public class ProceduralGroundChunk : MonoBehaviour
         {
             polyCollider = gameObject.AddComponent<PolygonCollider2D>();
         }
+
+        int vertexCount = segments + 1; 
     }
 
     // You can call this from an editor script or a manager to test generation
@@ -85,57 +87,71 @@ public class ProceduralGroundChunk : MonoBehaviour
     Vector2[] stoneUVs = new Vector2[vertexCount * 2];
     int[] stoneTris = new int[segments * 6];
     Vector2[] colliderPoints = new Vector2[vertexCount * 2];
-
-    // --- Generate all vertex data AND SPAWN OBJECTS---
-    for (int i = 0; i <= segments; i++)
-    {
-        float xLocal = i * step;
-        float xWorld = startXWorld + xLocal;
-
-        // Dynamic parameter calculation...
-        float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
-        float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
-        float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
-        float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
-        float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
-        float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
-        float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
-        float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
-
-        // --- Object Spawning Logic ---
-        // Check if we should spawn an object at this point.
-        if (i > 0 && i < segments && i % 5 == 0) // We'll check every 5th segment
+    
+     if (roadVertices == null || roadVertices.Length != vertexCount * 2)
         {
-            // First, try to spawn a fuel can (rarer)
-            if (Random.value < fuelCanSpawnChance)
-            {
-                Vector3 canPos = new Vector3(xLocal, yTop + fuelCanHeightOffset, 0);
-                // We use transform.TransformPoint to convert the local position to a world position for the new object
-                Instantiate(fuelCanPrefab, transform.TransformPoint(canPos), Quaternion.identity, transform);
-            }
-            // If we didn't spawn a fuel can, then try for a coin
-            else if (Random.value < coinSpawnChance)
-            {
-                Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
-                Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
-            }
+            roadVertices = new Vector3[vertexCount * 2];
+            roadUVs = new Vector2[vertexCount * 2];
+            stoneVertices = new Vector3[vertexCount * 2];
+            stoneUVs = new Vector2[vertexCount * 2];
+            colliderPoints = new Vector2[vertexCount * 2];
+        }
+        if (roadTris == null || roadTris.Length != segments * 6)
+        {
+            roadTris = new int[segments * 6];
+            stoneTris = new int[segments * 6];
         }
 
-        // Vertex calculations...
-        Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
-        Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
-        roadVertices[i] = roadTopVertex;
-        roadVertices[i + vertexCount] = roadBottomVertex;
-        stoneVertices[i] = roadBottomVertex;
-        stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
+    // --- Generate all vertex data AND SPAWN OBJECTS---
+        for (int i = 0; i <= segments; i++)
+        {
+            float xLocal = i * step;
+            float xWorld = startXWorld + xLocal;
 
-        // UVs...
-        float u = (float)i / segments * uvTilesX;
-        roadUVs[i] = new Vector2(u, 1f);
-        roadUVs[i + vertexCount] = new Vector2(u, 0f);
-        stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
-        stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
-    } // <-- THIS IS THE CORRECT PLACE FOR THE LOOP TO END
+            // Dynamic parameter calculation...
+            float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
+            float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
+            float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
+            float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
+            float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
+            float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
+            float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
+            float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
+
+            // --- Object Spawning Logic ---
+            // Check if we should spawn an object at this point.
+            if (i > 0 && i < segments && i % 5 == 0) // We'll check every 5th segment
+            {
+                // First, try to spawn a fuel can (rarer)
+                if (Random.value < fuelCanSpawnChance)
+                {
+                    Vector3 canPos = new Vector3(xLocal, yTop + fuelCanHeightOffset, 0);
+                    // We use transform.TransformPoint to convert the local position to a world position for the new object
+                    Instantiate(fuelCanPrefab, transform.TransformPoint(canPos), Quaternion.identity, transform);
+                }
+                // If we didn't spawn a fuel can, then try for a coin
+                else if (Random.value < coinSpawnChance)
+                {
+                    Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
+                    Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
+                }
+            }
+
+            // Vertex calculations...
+            Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
+            Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
+            roadVertices[i] = roadTopVertex;
+            roadVertices[i + vertexCount] = roadBottomVertex;
+            stoneVertices[i] = roadBottomVertex;
+            stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
+
+            // UVs...
+            float u = (float)i / segments * uvTilesX;
+            roadUVs[i] = new Vector2(u, 1f);
+            roadUVs[i + vertexCount] = new Vector2(u, 0f);
+            stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
+            stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
+        } // <-- THIS IS THE CORRECT PLACE FOR THE LOOP TO END
 
     // --- PAUSE EXECUTION ---
     yield return null;
