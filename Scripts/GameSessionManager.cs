@@ -43,9 +43,12 @@ public class GameSessionManager : MonoBehaviour
     public TextMeshProUGUI gameOverReasonText;
     public GameObject resumeButton;
 
+     private CrazyGamesManager crazyGamesManager;
+
     void Awake()
     {
         Instance = this;
+        crazyGamesManager = FindObjectOfType<CrazyGamesManager>(); 
     }
 
     void Start()
@@ -74,6 +77,14 @@ public class GameSessionManager : MonoBehaviour
         nextCheckpointDistance = 0f;
         coinsCollectedThisRun = 0;
         totalDistanceDriven = 0f;
+
+
+        // --- NEW ---
+        if(crazyGamesManager != null)
+        {
+            crazyGamesManager.StartGameplay();
+        }
+
 
         GenerateNewCheckpoint();
     }
@@ -170,6 +181,10 @@ public class GameSessionManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+         if(crazyGamesManager != null)
+    {
+        crazyGamesManager.StopGameplay();
+    }
         Time.timeScale = 0f;
         inGameMenuPanel.SetActive(true);
         

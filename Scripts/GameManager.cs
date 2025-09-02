@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System; 
+using CrazyGames; // <-- ADD THIS LINE
 
 public class GameManager : MonoBehaviour
 {
@@ -102,6 +103,7 @@ public bool TryPurchaseCar(CarData carToBuy, int carIndex)
     public void GoToMenu()
     {
         Time.timeScale = 1f; // Unpause the game before changing scene
+        CrazySDK.Ad.RequestAd(CrazyAdType.Midgame, () => {}, (error) => {}, () => {});
         LoadScene("MenuScene");
     }
 
@@ -149,6 +151,7 @@ public int GetUpgradeLevel(int carIndex, string statName)
     public void RetryGame()
     {
         Time.timeScale = 1f;
+        CrazySDK.Ad.RequestAd(CrazyAdType.Midgame, () => {}, (error) => {}, () => {});
         LoadScene("GameScene");
     }
 
