@@ -4,105 +4,108 @@ using UnityEngine;
 
 public class ProceduralGroundChunk : MonoBehaviour
 {
-
-    // These settings are controlled by the GroundStreamer
+    // --- Public properties set by GroundStreamer ---
     [HideInInspector] public int segments;
     [HideInInspector] public float step;
     [HideInInspector] public float startXWorld;
     [HideInInspector] public float seed;
-
-    [HideInInspector] public float worldVerticalOffset; // <-- ADD THIS LINE
+    [HideInInspector] public float worldVerticalOffset;
     [HideInInspector] public GameObject coinPrefab;
     [HideInInspector] public float coinSpawnChance;
     [HideInInspector] public float coinHeightOffset;
-
-    // --- NEW: Fuel Can Spawning Variables ---
     [HideInInspector] public GameObject fuelCanPrefab;
     [HideInInspector] public float fuelCanSpawnChance;
     [HideInInspector] public float fuelCanHeightOffset;
-
-
-
-    // These settings come from the BiomeProfile
     [HideInInspector] public BiomeProfile biome;
-
-    // These are general chunk settings
     [HideInInspector] public float bottomY = -10f;
     [HideInInspector] public float uvTilesX = 4f;
+    
     [Tooltip("Controls the size of the tiled stone texture. Smaller value = larger texture.")]
     public float stoneUvScale = 5f;
     [SerializeField] private float offsetY = -1f;
 
+    // --- Private component references ---
     private MeshFilter roadMF, stoneMF;
     private MeshRenderer roadMR, stoneMR;
-    // This is the new, corrected line
     [SerializeField] private PolygonCollider2D polyCollider;
+
+    // --- Pooled Arrays (declared at the class level for reuse) ---
+    private Vector3[] roadVertices;
+    private Vector2[] roadUVs;
+    private int[] roadTris;
+    private Vector3[] stoneVertices;
+    private Vector2[] stoneUVs;
+    private int[] stoneTris;
+    private Vector2[] colliderPoints;
 
     public float EndXWorld => startXWorld + segments * step;
 
     void Awake()
     {
-        // Create child objects for meshes
+        // Get all necessary components
         Transform roadGO = new GameObject("RoadMesh").transform;
         roadGO.parent = transform;
         roadGO.localPosition = Vector3.zero;
-
         roadMF = roadGO.gameObject.AddComponent<MeshFilter>();
         roadMR = roadGO.gameObject.AddComponent<MeshRenderer>();
-
 
         Transform stoneGO = new GameObject("StoneMesh").transform;
         stoneGO.parent = transform;
         stoneGO.localPosition = Vector3.zero;
-
         stoneMF = stoneGO.gameObject.AddComponent<MeshFilter>();
         stoneMR = stoneGO.gameObject.AddComponent<MeshRenderer>();
 
-
-        // New, improved code
-        // Try to get the component that's already on the object
         polyCollider = GetComponent<PolygonCollider2D>();
-        // If it doesn't exist (returns null), then add it.
         if (polyCollider == null)
         {
             polyCollider = gameObject.AddComponent<PolygonCollider2D>();
         }
-
-        int vertexCount = segments + 1; 
     }
 
-    // You can call this from an editor script or a manager to test generation
-    // You can call this from the GroundStreamer to start the build process
-    public IEnumerator BuildRoutine()
-{
-    // --- Shared variables ---
-    int vertexCount = segments + 1;
-    float roadHeight = 0.2f;
-
-    // --- Data arrays ---
-    Vector3[] roadVertices = new Vector3[vertexCount * 2];
-    Vector2[] roadUVs = new Vector2[vertexCount * 2];
-    int[] roadTris = new int[segments * 6];
-    Vector3[] stoneVertices = new Vector3[vertexCount * 2];
-    Vector2[] stoneUVs = new Vector2[vertexCount * 2];
-    int[] stoneTris = new int[segments * 6];
-    Vector2[] colliderPoints = new Vector2[vertexCount * 2];
-    
-     if (roadVertices == null || roadVertices.Length != vertexCount * 2)
+    // GroundStreamer will call this AFTER setting 'segments'.
+    public void Initialize()
+    {
+        Debug.Log($"Chunk Initialize START for {gameObject.name}. Segments: {segments}");
+        int vertexCount = segments + 1;
+        if (segments <= 0)
         {
-            roadVertices = new Vector3[vertexCount * 2];
-            roadUVs = new Vector2[vertexCount * 2];
-            stoneVertices = new Vector3[vertexCount * 2];
-            stoneUVs = new Vector2[vertexCount * 2];
-            colliderPoints = new Vector2[vertexCount * 2];
+            // --- DEBUG LOG 2 ---
+            Debug.LogError($"CRITICAL ERROR: Segments is {segments}! Cannot create arrays. Check GroundStreamer.", this.gameObject);
+            return;
         }
-        if (roadTris == null || roadTris.Length != segments * 6)
+        roadVertices = new Vector3[vertexCount * 2];
+        roadUVs = new Vector2[vertexCount * 2];
+        roadTris = new int[segments * 6];
+        stoneVertices = new Vector3[vertexCount * 2];
+        stoneUVs = new Vector2[vertexCount * 2];
+        stoneTris = new int[segments * 6];
+        colliderPoints = new Vector2[vertexCount * 2];
+         Debug.Log($"Chunk Initialize COMPLETE for {gameObject.name}. roadVertices array size: {roadVertices.Length}");
+    }
+
+        public IEnumerator BuildRoutine()
+    {
+        // --- DEBUG LOG 4 ---
+        Debug.Log($"BuildRoutine START for {gameObject.name}. Segments: {segments}, Step: {step}, StartX: {startXWorld}");
+
+        if (roadVertices == null || roadTris == null)
         {
-            roadTris = new int[segments * 6];
-            stoneTris = new int[segments * 6];
+            // --- DEBUG LOG 5 ---
+            Debug.LogError($"CRITICAL ERROR: Data arrays are NULL in BuildRoutine for {gameObject.name}. The Initialize() method was likely not called or failed. Aborting build for this chunk.", this.gameObject);
+            yield break; // Stop this coroutine immediately.
+        }
+        
+        if (biome == null)
+        {
+            Debug.LogError($"CRITICAL ERROR: Biome is NULL for {gameObject.name}. Check the GroundStreamer.", this.gameObject);
+            yield break;
         }
 
-    // --- Generate all vertex data AND SPAWN OBJECTS---
+        // --- Shared variables ---
+        int vertexCount = segments + 1;
+        float roadHeight = 0.2f;
+
+        // --- Generate all vertex data ---
         for (int i = 0; i <= segments; i++)
         {
             float xLocal = i * step;
@@ -118,22 +121,20 @@ public class ProceduralGroundChunk : MonoBehaviour
             float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
             float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
 
-            // --- Object Spawning Logic ---
-            // Check if we should spawn an object at this point.
-            if (i > 0 && i < segments && i % 5 == 0) // We'll check every 5th segment
+            // Object Spawning Logic...
+            if (i > 0 && i < segments && i % 5 == 0)
             {
-                // First, try to spawn a fuel can (rarer)
                 if (Random.value < fuelCanSpawnChance)
                 {
-                    Vector3 canPos = new Vector3(xLocal, yTop + fuelCanHeightOffset, 0);
-                    // We use transform.TransformPoint to convert the local position to a world position for the new object
-                    Instantiate(fuelCanPrefab, transform.TransformPoint(canPos), Quaternion.identity, transform);
+                    // Calculate the final world position directly, without TransformPoint
+                    Vector3 worldPos = new Vector3(startXWorld + xLocal, yTop + fuelCanHeightOffset, 0);
+                    ObjectPooler.Instance.SpawnFromPool("FuelCan", worldPos, Quaternion.identity);
                 }
-                // If we didn't spawn a fuel can, then try for a coin
                 else if (Random.value < coinSpawnChance)
                 {
-                    Vector3 coinPos = new Vector3(xLocal, yTop + coinHeightOffset, 0);
-                    Instantiate(coinPrefab, transform.TransformPoint(coinPos), Quaternion.identity, transform);
+                    // Calculate the final world position directly here as well
+                    Vector3 worldPos = new Vector3(startXWorld + xLocal, yTop + coinHeightOffset, 0);
+                    ObjectPooler.Instance.SpawnFromPool("Coin", worldPos, Quaternion.identity);
                 }
             }
 
@@ -151,51 +152,71 @@ public class ProceduralGroundChunk : MonoBehaviour
             roadUVs[i + vertexCount] = new Vector2(u, 0f);
             stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
             stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
-        } // <-- THIS IS THE CORRECT PLACE FOR THE LOOP TO END
+        }
+        
+        // --- DEBUG LOG 5.5 ---
+        Debug.Log($"Vertex generation loop COMPLETE for {gameObject.name}. First vertex Y position: {roadVertices[0].y}");
 
-    // --- PAUSE EXECUTION ---
-    yield return null;
+        // --- PAUSE EXECUTION ---
+        yield return null;
 
-    // --- Generate Triangles ---
-    int t = 0;
-    for (int i = 0; i < segments; i++)
-    {
-        int a = i; int b = i + vertexCount; int c = i + 1; int d = i + vertexCount + 1;
-        // Corrected triangle winding order for 3D shaders
-        roadTris[t] = a; roadTris[t + 1] = b; roadTris[t + 2] = c;
-        roadTris[t + 3] = d; roadTris[t + 4] = b; roadTris[t + 5] = c;
-        stoneTris[t] = a; stoneTris[t + 1] = b; stoneTris[t + 2] = c;
-        stoneTris[t + 3] = d; stoneTris[t + 4] = b; stoneTris[t + 5] = c;
-        t += 6;
+        // --- Generate Triangles ---
+        int t = 0;
+        for (int i = 0; i < segments; i++)
+        {
+            int a = i; int b = i + vertexCount; int c = i + 1; int d = i + vertexCount + 1;
+            roadTris[t] = a; roadTris[t + 1] = b; roadTris[t + 2] = c;
+            roadTris[t + 3] = d; roadTris[t + 4] = b; roadTris[t + 5] = c;
+            stoneTris[t] = a; stoneTris[t + 1] = b; stoneTris[t + 2] = c;
+            stoneTris[t + 3] = d; stoneTris[t + 4] = b; stoneTris[t + 5] = c;
+            t += 6;
+        }
+        
+        // --- PAUSE EXECUTION AGAIN ---
+        yield return null;
+
+        // --- Build Meshes and Collider ---
+        Mesh roadMesh = new Mesh();
+        roadMesh.name = "RoadProceduralMesh"; // Give the mesh a name for debugging
+        roadMesh.vertices = roadVertices;
+        roadMesh.triangles = roadTris;
+        roadMesh.uv = roadUVs;
+        roadMesh.RecalculateNormals();
+        roadMF.mesh = roadMesh;
+
+        Mesh stoneMesh = new Mesh();
+        stoneMesh.name = "StoneProceduralMesh";
+        stoneMesh.vertices = stoneVertices;
+        stoneMesh.triangles = stoneTris;
+        stoneMesh.uv = stoneUVs;
+        stoneMesh.RecalculateNormals();
+        stoneMF.mesh = stoneMesh;
+
+        int pointIndex = 0;
+        for (int i = 0; i < vertexCount; i++) { colliderPoints[pointIndex] = roadVertices[i]; pointIndex++; }
+        for (int i = vertexCount - 1; i >= 0; i--) { colliderPoints[pointIndex] = roadVertices[i + vertexCount]; pointIndex++; }
+        polyCollider.points = colliderPoints;
+
+        // --- DEBUG LOG 6 ---
+        if (biome.roadMaterial != null)
+        {
+             roadMR.material = biome.roadMaterial;
+             Debug.Log($"Assigned Road Material '{biome.roadMaterial.name}' to {gameObject.name}");
+        } else {
+            Debug.LogError($"CRITICAL ERROR: Road Material is NULL in biome '{biome.name}'!", this.gameObject);
+        }
+
+        if (biome.stoneMaterial != null)
+        {
+            stoneMR.material = biome.stoneMaterial;
+        } else {
+            Debug.LogError($"CRITICAL ERROR: Stone Material is NULL in biome '{biome.name}'!", this.gameObject);
+        }
+
+        transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
+        transform.localScale = Vector3.one;
+        
+        // --- DEBUG LOG 7 ---
+        Debug.Log($"BuildRoutine COMPLETE for {gameObject.name}. Mesh assigned with {roadMesh.vertexCount} vertices. Final position set to {transform.position}");
     }
-
-    // --- PAUSE EXECUTION AGAIN ---
-    yield return null;
-
-    // --- Build Meshes and Collider ---
-    Mesh roadMesh = new Mesh();
-    roadMesh.vertices = roadVertices;
-    roadMesh.triangles = roadTris;
-    roadMesh.uv = roadUVs;
-    roadMesh.RecalculateNormals();
-    roadMF.mesh = roadMesh;
-
-    Mesh stoneMesh = new Mesh();
-    stoneMesh.vertices = stoneVertices;
-    stoneMesh.triangles = stoneTris;
-    stoneMesh.uv = stoneUVs;
-    stoneMesh.RecalculateNormals();
-    stoneMF.mesh = stoneMesh;
-
-    int pointIndex = 0;
-    for (int i = 0; i < vertexCount; i++) { colliderPoints[pointIndex] = roadVertices[i]; pointIndex++; }
-    for (int i = vertexCount - 1; i >= 0; i--) { colliderPoints[pointIndex] = roadVertices[i + vertexCount]; pointIndex++; }
-    polyCollider.points = colliderPoints;
-
-    roadMR.material = biome.roadMaterial;
-    stoneMR.material = biome.stoneMaterial;
-
-    transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
-    transform.localScale = Vector3.one;
-}
 }

@@ -150,40 +150,33 @@ public class GroundStreamer : MonoBehaviour
         currentBiome = newBiome;
     }
 
-    void SpawnNextChunk()
+          void SpawnNextChunk()
     {
         var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
 
-        // --- Assign all properties to the new chunk ---
-
-        // Assign the current biome profile. This contains materials and noise settings.
+        // --- STEP 1: Assign ALL properties ---
         chunk.biome = currentBiome;
-
-        // --- NEW: Pass coin settings to the chunk ---
         chunk.coinPrefab = coinPrefab;
         chunk.coinSpawnChance = coinSpawnChance;
         chunk.coinHeightOffset = coinHeightOffset;
-
-        // --- NEW: Pass fuel can settings to the chunk ---
         chunk.fuelCanPrefab = fuelCanPrefab;
         chunk.fuelCanSpawnChance = fuelCanSpawnChance;
         chunk.fuelCanHeightOffset = fuelCanHeightOffset;
-
-
-        StartCoroutine(chunk.BuildRoutine());
-
-        // Assign settings from the streamer
         chunk.segments = segmentsPerChunk;
         chunk.step = step;
-        chunk.worldVerticalOffset = worldVerticalOffset; // <-- ADD THIS LINE
+        chunk.worldVerticalOffset = worldVerticalOffset;
         chunk.bottomY = bottomY;
         chunk.seed = seed;
         chunk.startXWorld = nextSpawnX;
         chunk.uvTilesX = uvTilesX;
 
-        // Now build the chunk using the assigned properties
+        // --- STEP 2: Initialize the chunk's arrays ---
+        chunk.Initialize();
+
+        // --- STEP 3: Start the build process (ONCE!) ---
         StartCoroutine(chunk.BuildRoutine());
 
+        // --- STEP 4: Add to active list ---
         active.AddLast(chunk);
         nextSpawnX += ChunkWorldLength;
     }

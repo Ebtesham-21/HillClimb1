@@ -42,6 +42,13 @@ public class Coin : MonoBehaviour
         StartCoroutine(AnimateAndDestroy());
     }
 
+    public void ResetState()
+{
+    isCollected = false;
+    // Also re-enable the collider if you disabled it
+    GetComponent<Collider2D>().enabled = true; 
+}
+
     private System.Collections.IEnumerator AnimateAndDestroy()
     {
         // Disable the collider so it can't be collected twice
@@ -66,6 +73,6 @@ public class Coin : MonoBehaviour
         }
 
         // Destroy the coin object when the animation is finished
-        Destroy(gameObject);
+        ObjectPooler.Instance.ReturnToPool(gameObject.tag, gameObject);
     }
 }

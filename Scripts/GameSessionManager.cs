@@ -19,6 +19,11 @@ public class GameSessionManager : MonoBehaviour
     public float CurrentForwardSpeed => car != null ? car.CurrentForwardSpeed : multiWheelCar.CurrentForwardSpeed;
     public bool IsGrounded() => car != null ? car.IsGrounded() : multiWheelCar.IsGrounded();
 
+     // --- NEW: Caching variables for UI ---
+    private int lastDisplayedDistance = -1;
+    private int lastDisplayedTime = -1;
+    private int lastDisplayedCheckpoint = -1;
+
 
     [Header("Distance Tracking")]
     public float totalDistanceDriven = 0f;
@@ -160,6 +165,30 @@ public class GameSessionManager : MonoBehaviour
     
     void UpdateUI()
     {
+
+        // --- Distance ---
+        int currentDistance = (int)totalDistanceDriven;
+        if (currentDistance != lastDisplayedDistance)
+        {
+            distanceDrivenText.text = $"Distance Driven: {currentDistance}m";
+            lastDisplayedDistance = currentDistance;
+        }
+
+        // --- Time ---
+        int currentTime = (int)timeLeft;
+        if (currentTime != lastDisplayedTime)
+        {
+            timeLeftText.text = $"Time Left: {currentTime}s";
+            lastDisplayedTime = currentTime;
+        }
+        
+        // --- Checkpoint ---
+        int currentCheckpointDist = (int)(nextCheckpointDistance - totalDistanceDriven);
+        if (currentCheckpointDist != lastDisplayedCheckpoint)
+        {
+            nextCheckpointText.text = $"Next Checkpoint in {currentCheckpointDist}m";
+            lastDisplayedCheckpoint = currentCheckpointDist;
+        }
         distanceDrivenText.text = $"Distance Driven: {totalDistanceDriven:F0}m";
         timeLeftText.text = $"Time Left: {timeLeft:F0}s";
         float distanceToNextCheckpoint = nextCheckpointDistance - totalDistanceDriven;

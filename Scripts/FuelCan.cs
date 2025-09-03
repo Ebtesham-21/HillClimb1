@@ -23,7 +23,14 @@ public class FuelCan : MonoBehaviour
             // AudioManager.Instance.PlayFuelSound();
 
             // Destroy the fuel can immediately after it's collected
-            Destroy(gameObject);
+            ObjectPooler.Instance.ReturnToPool(gameObject.tag, gameObject);
         }
     }
+
+    public void ResetState()
+{
+    isCollected = false;
+    // Also re-enable the collider if you disabled it
+    GetComponent<Collider2D>().enabled = true; 
+}
 }
