@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: MasterCarDatabase
   m_EditorClassIdentifier: 
   allCars:
-  - {fileID: 11400000, guid: 3cdac2403adc78545a0c9930f3c54e59, type: 2}
   - {fileID: 11400000, guid: dde9efa0da87244449a84595f9330b67, type: 2}
   - {fileID: 11400000, guid: 5c01e3bfa6ae09243bceaa15325d5735, type: 2}
   - {fileID: 11400000, guid: 4aad203cb460cac46bdd0fdee15acdaf, type: 2}
@@ -23,5 +22,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4f8e2079876e69b42a80622bbb176ffb, type: 2}
   - {fileID: 11400000, guid: 452ce04a79be0b4439ab37a8eebab06d, type: 2}
   - {fileID: 11400000, guid: dc08340e7ad103d49bfedcb6ed5938b7, type: 2}
+  - {fileID: 11400000, guid: 3cdac2403adc78545a0c9930f3c54e59, type: 2}
   - {fileID: 11400000, guid: 86c229e89ae48fa49a983deec02e1bc1, type: 2}
   - {fileID: 11400000, guid: d7cf249693d0298448af159a37c4b16e, type: 2}

@@ -18,7 +18,7 @@ public class Coin : MonoBehaviour
     {
         // Check if the object that entered the trigger is the player's car
         // We'll assume any object with a CarController is the player.
-        if (!isCollected && other.GetComponentInParent<CarController>() != null)
+        if (!isCollected && (other.GetComponentInParent<CarController>() != null || other.GetComponentInParent<MultiWheelCarController>() != null))
         {
             Collect();
         }
@@ -43,11 +43,12 @@ public class Coin : MonoBehaviour
     }
 
     public void ResetState()
-{
-    isCollected = false;
-    // Also re-enable the collider if you disabled it
-    GetComponent<Collider2D>().enabled = true; 
-}
+    {
+        isCollected = false;
+        // Also re-enable the collider if you disabled it
+        GetComponent<Collider2D>().enabled = true; 
+        spriteRenderer.color = new Color(spriteRenderer.color.r, spriteRenderer.color.g, spriteRenderer.color.b, 1f);
+    }
 
     private System.Collections.IEnumerator AnimateAndDestroy()
     {

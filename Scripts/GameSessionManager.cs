@@ -88,7 +88,11 @@ public class GameSessionManager : MonoBehaviour
         coinsCollectedThisRun = 0;
         totalDistanceDriven = 0f;
         
-        
+        if (ObjectPooler.Instance != null)
+    {
+        ObjectPooler.Instance.DeactivateAllPooledObjects();
+    }
+
 
 
         // --- NEW ---
@@ -97,6 +101,9 @@ public class GameSessionManager : MonoBehaviour
             crazyGamesManager.StartGameplay();
         }
 
+        lastDisplayedDistance = -1;
+        lastDisplayedTime = -1;
+        lastDisplayedCheckpoint = -1;
 
         GenerateNewCheckpoint();
     }

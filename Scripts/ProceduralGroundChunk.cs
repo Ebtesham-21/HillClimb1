@@ -8,28 +8,20 @@ public class ProceduralGroundChunk : MonoBehaviour
     [HideInInspector] public int segments;
     [HideInInspector] public float step;
     [HideInInspector] public float startXWorld;
+    [HideInInspector] public float startingFlatZoneLength; // <-- ADD THIS LINE
     [HideInInspector] public float seed;
-    [HideInInspector] public float worldVerticalOffset;
-    [HideInInspector] public GameObject coinPrefab;
-    [HideInInspector] public float coinSpawnChance;
-    [HideInInspector] public float coinHeightOffset;
-    [HideInInspector] public GameObject fuelCanPrefab;
-    [HideInInspector] public float fuelCanSpawnChance;
-    [HideInInspector] public float fuelCanHeightOffset;
     [HideInInspector] public BiomeProfile biome;
-    [HideInInspector] public float bottomY = -10f;
-    [HideInInspector] public float uvTilesX = 4f;
+    [HideInInspector] public List<SpawnableObject> spawnableObjects;
+    [HideInInspector] public float masterSpawnChance;
+    [HideInInspector] public int spawnInterval;
     
-    [Tooltip("Controls the size of the tiled stone texture. Smaller value = larger texture.")]
-    public float stoneUvScale = 5f;
-    [SerializeField] private float offsetY = -1f;
-
     // --- Private component references ---
     private MeshFilter roadMF, stoneMF;
     private MeshRenderer roadMR, stoneMR;
     [SerializeField] private PolygonCollider2D polyCollider;
+    private List<Vector3> potentialSpawnPoints = new List<Vector3>();
 
-    // --- Pooled Arrays (declared at the class level for reuse) ---
+    // --- Pooled Arrays ---
     private Vector3[] roadVertices;
     private Vector2[] roadUVs;
     private int[] roadTris;
@@ -42,7 +34,7 @@ public class ProceduralGroundChunk : MonoBehaviour
 
     void Awake()
     {
-        // Get all necessary components
+        // Get all necessary components for this chunk instance
         Transform roadGO = new GameObject("RoadMesh").transform;
         roadGO.parent = transform;
         roadGO.localPosition = Vector3.zero;
@@ -62,17 +54,12 @@ public class ProceduralGroundChunk : MonoBehaviour
         }
     }
 
-    // GroundStreamer will call this AFTER setting 'segments'.
+    // GroundStreamer calls this AFTER setting 'segments'.
     public void Initialize()
     {
-        Debug.Log($"Chunk Initialize START for {gameObject.name}. Segments: {segments}");
         int vertexCount = segments + 1;
-        if (segments <= 0)
-        {
-            // --- DEBUG LOG 2 ---
-            Debug.LogError($"CRITICAL ERROR: Segments is {segments}! Cannot create arrays. Check GroundStreamer.", this.gameObject);
-            return;
-        }
+        if (segments <= 0) return; // Safety check
+
         roadVertices = new Vector3[vertexCount * 2];
         roadUVs = new Vector2[vertexCount * 2];
         roadTris = new int[segments * 6];
@@ -80,115 +67,65 @@ public class ProceduralGroundChunk : MonoBehaviour
         stoneUVs = new Vector2[vertexCount * 2];
         stoneTris = new int[segments * 6];
         colliderPoints = new Vector2[vertexCount * 2];
-         Debug.Log($"Chunk Initialize COMPLETE for {gameObject.name}. roadVertices array size: {roadVertices.Length}");
     }
 
-        public IEnumerator BuildRoutine()
+    public IEnumerator BuildRoutine()
     {
-        // --- DEBUG LOG 4 ---
-        Debug.Log($"BuildRoutine START for {gameObject.name}. Segments: {segments}, Step: {step}, StartX: {startXWorld}");
+        potentialSpawnPoints.Clear();
+        if (roadVertices == null) { yield break; }
+        if (biome == null) { yield break; }
 
-        if (roadVertices == null || roadTris == null)
-        {
-            // --- DEBUG LOG 5 ---
-            Debug.LogError($"CRITICAL ERROR: Data arrays are NULL in BuildRoutine for {gameObject.name}. The Initialize() method was likely not called or failed. Aborting build for this chunk.", this.gameObject);
-            yield break; // Stop this coroutine immediately.
-        }
-        
-        if (biome == null)
-        {
-            Debug.LogError($"CRITICAL ERROR: Biome is NULL for {gameObject.name}. Check the GroundStreamer.", this.gameObject);
-            yield break;
-        }
-
-        // --- Shared variables ---
         int vertexCount = segments + 1;
         float roadHeight = 0.2f;
 
-        // --- Generate all vertex data ---
+        // Step 1: Calculate vertex positions and identify potential spawn points
         for (int i = 0; i <= segments; i++)
         {
             float xLocal = i * step;
-            float xWorld = startXWorld + xLocal;
+            float yTop = CalculateYTop(xLocal);
 
-            // Dynamic parameter calculation...
-            float baseYNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 100f);
-            float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
-            float amplitudeNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 200f);
-            float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
-            float scaleNoise = Mathf.PerlinNoise((xWorld + seed) * biome.metaNoiseScale, 300f);
-            float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
-            float mainTerrainNoise = Mathf.PerlinNoise((xWorld + seed) * currentNoiseScale, 0f);
-            float yTop = worldVerticalOffset + currentBaseY + mainTerrainNoise * currentAmplitude;
-
-            // Object Spawning Logic...
-            if (i > 0 && i < segments && i % 5 == 0)
+            if (i > 0 && i < segments && i % spawnInterval == 0)
             {
-                if (Random.value < fuelCanSpawnChance)
-                {
-                    // Calculate the final world position directly, without TransformPoint
-                    Vector3 worldPos = new Vector3(startXWorld + xLocal, yTop + fuelCanHeightOffset, 0);
-                    ObjectPooler.Instance.SpawnFromPool("FuelCan", worldPos, Quaternion.identity);
-                }
-                else if (Random.value < coinSpawnChance)
-                {
-                    // Calculate the final world position directly here as well
-                    Vector3 worldPos = new Vector3(startXWorld + xLocal, yTop + coinHeightOffset, 0);
-                    ObjectPooler.Instance.SpawnFromPool("Coin", worldPos, Quaternion.identity);
-                }
+                potentialSpawnPoints.Add(new Vector3(xLocal, yTop, 0));
             }
 
-            // Vertex calculations...
             Vector3 roadTopVertex = new Vector3(xLocal, yTop, 0f);
             Vector3 roadBottomVertex = new Vector3(xLocal, yTop - roadHeight, 0f);
             roadVertices[i] = roadTopVertex;
             roadVertices[i + vertexCount] = roadBottomVertex;
             stoneVertices[i] = roadBottomVertex;
-            stoneVertices[i + vertexCount] = new Vector3(xLocal, bottomY, 0f);
-
-            // UVs...
-            float u = (float)i / segments * uvTilesX;
+            stoneVertices[i + vertexCount] = new Vector3(xLocal, yTop - 30f, 0f); // Use yTop for depth
+            
+            // UVs
+            float u = (float)i / segments * 4f; // Example UV tiling
             roadUVs[i] = new Vector2(u, 1f);
             roadUVs[i + vertexCount] = new Vector2(u, 0f);
-            stoneUVs[i] = new Vector2(roadBottomVertex.x / stoneUvScale, roadBottomVertex.y / stoneUvScale);
-            stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / stoneUvScale, stoneVertices[i + vertexCount].y / stoneUvScale);
+            stoneUVs[i] = new Vector2(roadBottomVertex.x / 5f, roadBottomVertex.y / 5f);
+            stoneUVs[i + vertexCount] = new Vector2(stoneVertices[i + vertexCount].x / 5f, stoneVertices[i + vertexCount].y / 5f);
         }
-        
-        // --- DEBUG LOG 5.5 ---
-        Debug.Log($"Vertex generation loop COMPLETE for {gameObject.name}. First vertex Y position: {roadVertices[0].y}");
 
-        // --- PAUSE EXECUTION ---
-        yield return null;
+        yield return null; // Pause frame
 
-        // --- Generate Triangles ---
+        // Step 2: Generate Triangles
         int t = 0;
         for (int i = 0; i < segments; i++)
         {
-            int a = i; int b = i + vertexCount; int c = i + 1; int d = i + vertexCount + 1;
+            int a = i, b = i + vertexCount, c = i + 1, d = i + vertexCount + 1;
             roadTris[t] = a; roadTris[t + 1] = b; roadTris[t + 2] = c;
-            roadTris[t + 3] = d; roadTris[t + 4] = b; roadTris[t + 5] = c;
+            roadTris[t + 3] = c; roadTris[t + 4] = b; roadTris[t + 5] = d;
             stoneTris[t] = a; stoneTris[t + 1] = b; stoneTris[t + 2] = c;
-            stoneTris[t + 3] = d; stoneTris[t + 4] = b; stoneTris[t + 5] = c;
+            stoneTris[t + 3] = c; stoneTris[t + 4] = b; stoneTris[t + 5] = d;
             t += 6;
         }
-        
-        // --- PAUSE EXECUTION AGAIN ---
-        yield return null;
 
-        // --- Build Meshes and Collider ---
-        Mesh roadMesh = new Mesh();
-        roadMesh.name = "RoadProceduralMesh"; // Give the mesh a name for debugging
-        roadMesh.vertices = roadVertices;
-        roadMesh.triangles = roadTris;
-        roadMesh.uv = roadUVs;
+        yield return null; // Pause frame
+
+        // Step 3: Build Meshes, set final chunk position
+        Mesh roadMesh = new Mesh { name = "RoadProcMesh", vertices = roadVertices, triangles = roadTris, uv = roadUVs };
         roadMesh.RecalculateNormals();
         roadMF.mesh = roadMesh;
 
-        Mesh stoneMesh = new Mesh();
-        stoneMesh.name = "StoneProceduralMesh";
-        stoneMesh.vertices = stoneVertices;
-        stoneMesh.triangles = stoneTris;
-        stoneMesh.uv = stoneUVs;
+        Mesh stoneMesh = new Mesh { name = "StoneProcMesh", vertices = stoneVertices, triangles = stoneTris, uv = stoneUVs };
         stoneMesh.RecalculateNormals();
         stoneMF.mesh = stoneMesh;
 
@@ -196,27 +133,72 @@ public class ProceduralGroundChunk : MonoBehaviour
         for (int i = 0; i < vertexCount; i++) { colliderPoints[pointIndex] = roadVertices[i]; pointIndex++; }
         for (int i = vertexCount - 1; i >= 0; i--) { colliderPoints[pointIndex] = roadVertices[i + vertexCount]; pointIndex++; }
         polyCollider.points = colliderPoints;
-
-        // --- DEBUG LOG 6 ---
-        if (biome.roadMaterial != null)
-        {
-             roadMR.material = biome.roadMaterial;
-             Debug.Log($"Assigned Road Material '{biome.roadMaterial.name}' to {gameObject.name}");
-        } else {
-            Debug.LogError($"CRITICAL ERROR: Road Material is NULL in biome '{biome.name}'!", this.gameObject);
-        }
-
-        if (biome.stoneMaterial != null)
-        {
-            stoneMR.material = biome.stoneMaterial;
-        } else {
-            Debug.LogError($"CRITICAL ERROR: Stone Material is NULL in biome '{biome.name}'!", this.gameObject);
-        }
-
-        transform.position = new Vector3(startXWorld, offsetY, transform.position.z);
-        transform.localScale = Vector3.one;
         
-        // --- DEBUG LOG 7 ---
-        Debug.Log($"BuildRoutine COMPLETE for {gameObject.name}. Mesh assigned with {roadMesh.vertexCount} vertices. Final position set to {transform.position}");
+        roadMR.material = biome.roadMaterial;
+        stoneMR.material = biome.stoneMaterial;
+
+        transform.position = new Vector3(startXWorld, 0, 0);
+        transform.localScale = Vector3.one;
+
+        // Step 4: Now that the chunk is in its final position, spawn the objects
+        SpawnObjects();
+    }
+    
+    private float CalculateYTop(float xLocal)
+    {
+        float xWorld = startXWorld + xLocal;
+        float baseYNoise = Mathf.PerlinNoise(xWorld * biome.metaNoiseScale, 100f);
+        float currentBaseY = Mathf.Lerp(biome.baseYRange.x, biome.baseYRange.y, baseYNoise);
+        float amplitudeNoise = Mathf.PerlinNoise(xWorld * biome.metaNoiseScale, 200f);
+        float currentAmplitude = Mathf.Lerp(biome.amplitudeRange.x, biome.amplitudeRange.y, amplitudeNoise);
+
+        // --- NEW: STARTING SAFE ZONE LOGIC ---
+        // Check if the current world position is within the flat zone.
+        if (xWorld < startingFlatZoneLength)
+        {
+            // If we are in the flat zone, we calculate a "fade-in" multiplier.
+            // This multiplier will go smoothly from 0.0 (at the start) to 1.0 (at the end of the zone).
+            float amplitudeMultiplier = Mathf.InverseLerp(0, startingFlatZoneLength, xWorld);
+            
+            // We apply this multiplier to the hill height.
+            currentAmplitude *= amplitudeMultiplier;
+        }
+        // --- END OF NEW LOGIC ---
+        float scaleNoise = Mathf.PerlinNoise(xWorld * biome.metaNoiseScale, 300f);
+        float currentNoiseScale = Mathf.Lerp(biome.noiseScaleRange.x, biome.noiseScaleRange.y, scaleNoise);
+        float mainTerrainNoise = Mathf.PerlinNoise(xWorld * currentNoiseScale, 0f);
+        return currentBaseY + mainTerrainNoise * currentAmplitude;
+    }
+    
+    private void SpawnObjects()
+    {
+        foreach (Vector3 localSpawnPoint in potentialSpawnPoints)
+        {
+            if (Random.value < masterSpawnChance)
+            {
+                SpawnRandomObjectFromList(localSpawnPoint);
+            }
+        }
+    }
+
+    private void SpawnRandomObjectFromList(Vector3 localPosition)
+    {
+        if (spawnableObjects == null || spawnableObjects.Count == 0) return;
+
+        float totalWeight = 0;
+        foreach (var obj in spawnableObjects) { totalWeight += obj.weight; }
+
+        float randomValue = Random.Range(0, totalWeight);
+
+        foreach (var obj in spawnableObjects)
+        {
+            if (randomValue <= obj.weight)
+            {
+                Vector3 worldPos = transform.TransformPoint(localPosition + new Vector3(0, obj.heightOffset, 0));
+                ObjectPooler.Instance.SpawnFromPool(obj.prefab.tag, worldPos, Quaternion.identity);
+                return;
+            }
+            randomValue -= obj.weight;
+        }
     }
 }

@@ -5,184 +5,130 @@ using UnityEngine;
 public class GroundStreamer : MonoBehaviour
 {
     [Header("References")]
-    public Transform player;
+    public Transform player; // This will be assigned by the PlayerSpawner
     public ProceduralGroundChunk chunkPrefab;
 
     [Header("Biome Management")]
-    [Tooltip("All the biomes that can be generated.")]
     public BiomeProfile[] availableBiomes;
-    [Tooltip("The range in meters for how long a biome lasts before changing.")]
     public Vector2 biomeChangeDistanceRange = new Vector2(1000f, 2300f);
 
-    private BiomeProfile currentBiome;
-    private float nextBiomeChangeDistance;
-
-    [Header("Global Settings")]
-    public float seed = 1234f;
-
     [Header("Chunk Settings")]
-    [Tooltip("The vertical offset for the entire generated world.")]
-    public float worldVerticalOffset = 0f; // <-- ADD THIS LINE
+    [Tooltip("The length of the initial flat area at the start of the game.")]
+    public float startingFlatZoneLength = 50f; // <-- ADD THIS LINE
     public int segmentsPerChunk = 60;
     public float step = 1f;
-    public float bottomY = -20f;
-    public float uvTilesX = 4f;
     public int chunksAhead = 4;
     public int chunksBehind = 2;
 
+    [Header("Object Spawning (Unified System)")]
+    public List<SpawnableObject> spawnableObjects;
+    [Range(0f, 1f)] public float masterSpawnChance = 0.4f;
+    public int spawnInterval = 8;
 
+
+    
+    // Private state variables
     private readonly LinkedList<ProceduralGroundChunk> active = new LinkedList<ProceduralGroundChunk>();
     private float nextSpawnX = 0f;
     private float ChunkWorldLength => segmentsPerChunk * step;
-
-    [Header("Object Spawning")] // New header
-    public GameObject coinPrefab;
-    [Range(0f, 1f)] public float coinSpawnChance = 0.25f; // 25% chance
-    public float coinHeightOffset = 1.5f; // How high above the ground coins spawn
-
-    // --- NEW: Fuel Can Controls ---
-    public GameObject fuelCanPrefab;
-    [Tooltip("Fuel cans are rarer than coins.")]
-    [Range(0f, 1f)] public float fuelCanSpawnChance = 0.05f; // 5% chance
-    public float fuelCanHeightOffset = 1.0f; // Place it a bit lower than coins
-
-
-
-    void Start()
+    private BiomeProfile currentBiome;
+    private float nextBiomeChangeDistance;
+    
+    // This is the one and only public method to start/restart the generation.
+    // It is called by the PlayerSpawner AFTER the player has been created.
+    public void InitializeAndGenerate()
+    {
+        if (player == null || chunkPrefab == null)
         {
-            Initialize();
+            Debug.LogError("GroundStreamer cannot initialize: Player or ChunkPrefab is not assigned!", this.gameObject);
+            this.enabled = false;
+            return;
         }
 
-
-
-
-        public void ResetAndInitialize()
-    {
-        // 1. Clean up any old chunks that might still exist from the previous run.
+        // 1. Clean up any old chunks from a previous run
         foreach (var chunk in active)
         {
-            if (chunk != null) 
-            {
-                Destroy(chunk.gameObject);
-            }
+            if (chunk != null) Destroy(chunk.gameObject);
         }
-        // 2. Clear the list of chunk references.
         active.Clear();
 
-        // 3. Re-run the original startup logic to generate a fresh new world.
-        Initialize();
-    }
-    public void Initialize()
-    {
-        if (!player || !chunkPrefab)
-        {
-            Debug.LogError("Assign player and chunk prefab on GroundStreamer");
-            enabled = false;
-            return;
-        }
-
-        if (availableBiomes.Length == 0)
-        {
-            Debug.LogError("No biomes assigned in the 'availableBiomes' array on GroundStreamer!");
-            enabled = false;
-            return;
-        }
-
-        // --- Biome Initialization ---
-        // Start with a random biome
+        // 2. Initialize state for a new run
         currentBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
-        // Set the first distance for a biome change
         nextBiomeChangeDistance = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
-        Debug.Log($"Starting with biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
-
-
-        // --- Original Spawning Logic ---
         float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
         nextSpawnX = startX;
 
-        int total = chunksBehind + chunksAhead + 1;
-        for (int i = 0; i < total; i++) SpawnNextChunk();
+        // 3. Spawn the initial set of chunks
+        int total = chunksAhead + chunksBehind + 1;
+        for (int i = 0; i < total; i++)
+        {
+            SpawnNextChunk();
+        }
     }
 
     void Update()
     {
+        if (player == null || active.Count == 0) return; // Don't run if not initialized or no player
+
         CheckForBiomeChange();
+        
+        // Spawn new chunks ahead of the player
         float needUntil = player.position.x + chunksAhead * ChunkWorldLength;
-        while (active.Last == null || active.Last.Value.EndXWorld < needUntil)
+        if (active.Last.Value.EndXWorld < needUntil)
+        {
             SpawnNextChunk();
-
-
+        }
+        
+        // Cull old chunks behind the player
         float cullBefore = player.position.x - chunksBehind * ChunkWorldLength - ChunkWorldLength * 0.5f;
         while (active.First != null && active.First.Value.EndXWorld < cullBefore)
         {
             var first = active.First.Value;
             active.RemoveFirst();
             Destroy(first.gameObject);
-
         }
     }
+    
+    void SpawnNextChunk()
+    {
+        var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
 
+        // Assign all properties
+        chunk.biome = currentBiome;
+        chunk.segments = segmentsPerChunk;
+        chunk.step = step;
+        chunk.startXWorld = nextSpawnX;
+        chunk.startingFlatZoneLength = startingFlatZoneLength; 
+        
+        // Pass the unified spawning data
+        chunk.spawnableObjects = spawnableObjects;
+        chunk.masterSpawnChance = masterSpawnChance;
+        chunk.spawnInterval = spawnInterval;
+
+        chunk.Initialize();
+        StartCoroutine(chunk.BuildRoutine());
+
+        active.AddLast(chunk);
+        nextSpawnX += ChunkWorldLength;
+    }
 
     void CheckForBiomeChange()
     {
-        // Check if the next chunk to be spawned is past the change threshold
         if (nextSpawnX >= nextBiomeChangeDistance)
         {
             SwitchToNewBiome();
-
-            // Calculate the next change point from the current position
-            float nextChange = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
-            nextBiomeChangeDistance += nextChange;
-
-            Debug.Log($"Switching to biome: {currentBiome.biomeName}. Next change at {nextBiomeChangeDistance}m.");
         }
     }
 
     void SwitchToNewBiome()
     {
-        // This loop ensures we don't randomly pick the same biome again
-        BiomeProfile newBiome;
-        do
-        {
-            newBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
-        } while (newBiome == currentBiome && availableBiomes.Length > 1); // Avoid infinite loop if only 1 biome exists
+        float nextChange = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
+        nextBiomeChangeDistance += nextChange;
 
+        BiomeProfile newBiome;
+        do {
+            newBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
+        } while (newBiome == currentBiome && availableBiomes.Length > 1);
         currentBiome = newBiome;
     }
-
-          void SpawnNextChunk()
-    {
-        var chunk = Instantiate(chunkPrefab, Vector3.zero, Quaternion.identity, transform);
-
-        // --- STEP 1: Assign ALL properties ---
-        chunk.biome = currentBiome;
-        chunk.coinPrefab = coinPrefab;
-        chunk.coinSpawnChance = coinSpawnChance;
-        chunk.coinHeightOffset = coinHeightOffset;
-        chunk.fuelCanPrefab = fuelCanPrefab;
-        chunk.fuelCanSpawnChance = fuelCanSpawnChance;
-        chunk.fuelCanHeightOffset = fuelCanHeightOffset;
-        chunk.segments = segmentsPerChunk;
-        chunk.step = step;
-        chunk.worldVerticalOffset = worldVerticalOffset;
-        chunk.bottomY = bottomY;
-        chunk.seed = seed;
-        chunk.startXWorld = nextSpawnX;
-        chunk.uvTilesX = uvTilesX;
-
-        // --- STEP 2: Initialize the chunk's arrays ---
-        chunk.Initialize();
-
-        // --- STEP 3: Start the build process (ONCE!) ---
-        StartCoroutine(chunk.BuildRoutine());
-
-        // --- STEP 4: Add to active list ---
-        active.AddLast(chunk);
-        nextSpawnX += ChunkWorldLength;
-    }
-
-// --- In GroundStreamer.cs ---
-
-
-
 }

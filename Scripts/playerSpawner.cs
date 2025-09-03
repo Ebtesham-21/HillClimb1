@@ -78,9 +78,11 @@ public class PlayerSpawner : MonoBehaviour
         }
         
         GroundStreamer groundStreamer = FindObjectOfType<GroundStreamer>();
-        if(groundStreamer != null)
+        
+        if (groundStreamer != null)
         {
             groundStreamer.player = carInstance.transform;
+            groundStreamer.InitializeAndGenerate();
         }
     }
 }

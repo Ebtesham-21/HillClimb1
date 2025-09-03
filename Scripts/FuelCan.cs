@@ -12,7 +12,7 @@ public class FuelCan : MonoBehaviour
         // Find the CarController on the object that collided with us
         CarController car = other.GetComponentInParent<CarController>();
 
-        if (!isCollected && car != null)
+       if (!isCollected && (other.GetComponentInParent<CarController>() != null || other.GetComponentInParent<MultiWheelCarController>() != null))
         {
             // We found the car! Call its AddFuel method.
             car.AddFuel(fuelAmount);

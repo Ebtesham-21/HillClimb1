@@ -14,5 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   carPrefab: {fileID: 4505822847091911282, guid: 8d0f797a4ef062e4194a7390525acdb5, type: 3}
   carName: Auto Rickshaw 1
-  price: 0
-  isUnlockedByDefault: 1
+  price: 30000
+  isUnlockedByDefault: 0
+  baseMaxFuel: 100
+  baseMotorSpeed: 2500
+  baseMaxMotorTorque: 1000
