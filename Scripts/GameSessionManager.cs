@@ -63,6 +63,7 @@ public class GameSessionManager : MonoBehaviour
 
     void Start()
     {
+        Time.timeScale = 1f;
         // Try to find both controller types
         car = FindObjectOfType<CarController>();
         multiWheelCar = FindObjectOfType<MultiWheelCarController>();
@@ -80,7 +81,8 @@ public class GameSessionManager : MonoBehaviour
         startPosition = carTransform.position;
         
         inGameMenuPanel.SetActive(false);
-        Time.timeScale = 1f;
+        isGameOver = false; // Also good to reset the state flags here
+        isPaused = false;
 
         // Initialize all session variables for a clean run
         timeLeft = 0f;
@@ -170,42 +172,39 @@ public class GameSessionManager : MonoBehaviour
         timeLeft += Random.Range(checkpointTimeRewardRange.x, checkpointTimeRewardRange.y);
     }
     
-    void UpdateUI()
+   void UpdateUI()
+{
+    // --- Distance ---
+    // We cast to an int for the check, as the display is an int.
+    int currentDistance = (int)totalDistanceDriven; 
+    if (currentDistance != lastDisplayedDistance)
     {
-
-        // --- Distance ---
-        int currentDistance = (int)totalDistanceDriven;
-        if (currentDistance != lastDisplayedDistance)
-        {
-            distanceDrivenText.text = $"Distance Driven: {currentDistance}m";
-            lastDisplayedDistance = currentDistance;
-        }
-
-        // --- Time ---
-        int currentTime = (int)timeLeft;
-        if (currentTime != lastDisplayedTime)
-        {
-            timeLeftText.text = $"Time Left: {currentTime}s";
-            lastDisplayedTime = currentTime;
-        }
-        
-        // --- Checkpoint ---
-        int currentCheckpointDist = (int)(nextCheckpointDistance - totalDistanceDriven);
-        if (currentCheckpointDist != lastDisplayedCheckpoint)
-        {
-            nextCheckpointText.text = $"Next Checkpoint in {currentCheckpointDist}m";
-            lastDisplayedCheckpoint = currentCheckpointDist;
-        }
-        distanceDrivenText.text = $"Distance Driven: {totalDistanceDriven:F0}m";
-        timeLeftText.text = $"Time Left: {timeLeft:F0}s";
-        float distanceToNextCheckpoint = nextCheckpointDistance - totalDistanceDriven;
-        nextCheckpointText.text = $"Next Checkpoint in {distanceToNextCheckpoint:F0}m";
+        // ONLY create a new string if the value has changed.
+        distanceDrivenText.text = $"Distance Driven: {currentDistance}m";
+        lastDisplayedDistance = currentDistance;
     }
 
+    // --- Time ---
+    int currentTime = (int)timeLeft;
+    if (currentTime != lastDisplayedTime)
+    {
+        timeLeftText.text = $"Time Left: {currentTime}s";
+        lastDisplayedTime = currentTime;
+    }
+    
+    // --- Checkpoint ---
+    int distanceToNext = (int)(nextCheckpointDistance - totalDistanceDriven);
+    if (distanceToNext != lastDisplayedCheckpoint)
+    {
+        nextCheckpointText.text = $"Next Checkpoint in {distanceToNext}m";
+        lastDisplayedCheckpoint = distanceToNext;
+    }
+}
     public void PauseGame()
     {
         isPaused = true;
-        Time.timeScale = 0f;
+        GameManager.Instance.PauseGame();
+        
         inGameMenuPanel.SetActive(true);
         gameOverReasonText.text = "PAUSED";
         finalDistanceText.gameObject.SetActive(false);
@@ -216,7 +215,7 @@ public class GameSessionManager : MonoBehaviour
     public void ResumeGame()
     {
         isPaused = false;
-        Time.timeScale = 1f;
+        GameManager.Instance.ResumeGame();
         inGameMenuPanel.SetActive(false);
     }
     
@@ -224,11 +223,21 @@ public class GameSessionManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
-         if(crazyGamesManager != null)
-    {
-        crazyGamesManager.StopGameplay();
-    }
-        Time.timeScale = 0f;
+        GameManager.Instance.GameOver();
+        if (crazyGamesManager != null)
+        {
+            crazyGamesManager.StopGameplay();
+        }
+
+         if (car != null)
+        {
+            car.enabled = false;
+        }
+        if (multiWheelCar != null)
+        {
+            multiWheelCar.enabled = false;
+        }
+        
         inGameMenuPanel.SetActive(true);
         
         gameOverReasonText.text = reason;

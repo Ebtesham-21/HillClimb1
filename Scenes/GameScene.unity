@@ -2086,7 +2086,7 @@ Transform:
   m_GameObject: {fileID: 1056875798}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.51, y: 9.49, z: -2.742735}
+  m_LocalPosition: {x: -7.42, y: 3.51, z: -2.742735}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2362,6 +2362,7 @@ MonoBehaviour:
   availableBiomes:
   - {fileID: 11400000, guid: 9da2bd02b0a1bee4996462f1f35bcd2d, type: 2}
   biomeChangeDistanceRange: {x: 1000, y: 2300}
+  startingFlatZoneLength: 50
   segmentsPerChunk: 60
   step: 1
   chunksAhead: 4
@@ -3557,7 +3558,7 @@ Transform:
   m_GameObject: {fileID: 2061122174}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.39, y: 6.3736296, z: -2.63}
+  m_LocalPosition: {x: -7.39, y: 3.55, z: -2.63}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

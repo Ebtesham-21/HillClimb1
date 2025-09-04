@@ -4,6 +4,7 @@ using TMPro;
 public class CoinCounterUI : MonoBehaviour
 {
     public TextMeshProUGUI coinText;
+    private int lastDisplayedCoins = -1; // Cache variable
 
     void Start()
     {
@@ -14,9 +15,16 @@ public class CoinCounterUI : MonoBehaviour
     // Update is fine here since it's just checking a value, not running complex logic.
     void Update()
     {
-        // Constantly check if the text needs updating.
-        // This is a simple way to ensure it's always correct.
-        UpdateCoinText();
+         if (GameManager.Instance != null)
+        {
+            int currentCoins = GameManager.Instance.totalCoins;
+            // Only update the text if the coin value has actually changed.
+            if (currentCoins != lastDisplayedCoins)
+            {
+                coinText.text = currentCoins.ToString();
+                lastDisplayedCoins = currentCoins;
+            }
+        }
     }
 
     void UpdateCoinText()

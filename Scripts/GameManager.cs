@@ -98,12 +98,27 @@ public bool TryPurchaseCar(CarData carToBuy, int carIndex)
         totalCoins = PlayerPrefs.GetInt("TotalCoins", 0);
     }
 
+    public void PauseGame()
+    {
+        Time.timeScale = 0f;
+    }
+
+    public void ResumeGame()
+    {
+        Time.timeScale = 1f;
+    }
+
+    public void GameOver()
+    {
+        // This is called by the GameSessionManager
+        Time.timeScale = 0f;
+    }
 
 
     public void GoToMenu()
     {
         Time.timeScale = 1f; // Unpause the game before changing scene
-        CrazySDK.Ad.RequestAd(CrazyAdType.Midgame, () => {}, (error) => {}, () => {});
+        CrazySDK.Ad.RequestAd(CrazyAdType.Midgame, () => { }, (error) => { }, () => { });
         LoadScene("MenuScene");
     }
 
