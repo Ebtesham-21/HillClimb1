@@ -36,29 +36,55 @@ public class GroundStreamer : MonoBehaviour
     
     // This is the one and only public method to start/restart the generation.
     // It is called by the PlayerSpawner AFTER the player has been created.
-    public void InitializeAndGenerate()
+        public void InitializeAndGenerate()
     {
         if (player == null || chunkPrefab == null)
         {
             Debug.LogError("GroundStreamer cannot initialize: Player or ChunkPrefab is not assigned!", this.gameObject);
-            this.enabled = false;
             return;
         }
 
-        // 1. Clean up any old chunks from a previous run
+        // --- NEW: Wait for the Object Pooler to be ready ---
+        if (ObjectPooler.IsReady)
+        {
+            // If the pooler is already ready, generate immediately.
+            GenerateWorld();
+        }
+        else
+        {
+            // If not, subscribe to the event and wait for the signal.
+            Debug.Log("GroundStreamer is waiting for the Object Pooler to become ready...");
+            ObjectPooler.OnPoolerReady += HandlePoolerReady;
+        }
+    }
+
+    // This is the new method that will be called by the event
+    private void HandlePoolerReady()
+    {
+        // Unsubscribe to prevent this from being called multiple times
+        ObjectPooler.OnPoolerReady -= HandlePoolerReady;
+        
+        Debug.Log("GroundStreamer received 'OnPoolerReady' signal. Generating world.");
+        GenerateWorld();
+    }
+
+    // We move the actual generation logic into its own private method
+    private void GenerateWorld()
+    {
+        // Clean up any old data from a previous run
         foreach (var chunk in active)
         {
             if (chunk != null) Destroy(chunk.gameObject);
         }
         active.Clear();
 
-        // 2. Initialize state for a new run
+        // Initialize state for a new run
         currentBiome = availableBiomes[Random.Range(0, availableBiomes.Length)];
         nextBiomeChangeDistance = Random.Range(biomeChangeDistanceRange.x, biomeChangeDistanceRange.y);
         float startX = Mathf.Floor(player.position.x / ChunkWorldLength) * ChunkWorldLength - chunksBehind * ChunkWorldLength;
         nextSpawnX = startX;
 
-        // 3. Spawn the initial set of chunks
+        // Spawn initial chunks
         int total = chunksAhead + chunksBehind + 1;
         for (int i = 0; i < total; i++)
         {

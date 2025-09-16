@@ -1,9 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class ObjectPooler : MonoBehaviour
 {
     public static ObjectPooler Instance;
+    public static bool IsReady { get; private set; } = false; // <-- NEW: Ready flag
+    public static event Action OnPoolerReady; // <-- NEW: Event to notify others
+
 
     [System.Serializable]
     public class Pool
@@ -21,7 +25,7 @@ public class ObjectPooler : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-           
+
         }
         else
         {
@@ -43,6 +47,11 @@ public class ObjectPooler : MonoBehaviour
             }
             poolDictionary.Add(pool.tag, objectQueue);
         }
+         // --- NEW: Signal that the pooler is fully initialized ---
+        IsReady = true;
+        OnPoolerReady?.Invoke();
+        Debug.Log("Object Pooler is now ready.");
+
     }
 
     public GameObject SpawnFromPool(string tag, Vector3 position, Quaternion rotation)
